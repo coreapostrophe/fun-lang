@@ -26,7 +26,7 @@ macro_rules! source {
 #[derive(Debug)]
 pub enum CompilerError {
     UnexpectedCharacter(Source),
-    CharacterNotFound(Source),
+    IndexOutOfBounds(Source),
 }
 
 impl CompilerError {
@@ -44,8 +44,8 @@ impl Display for CompilerError {
             Self::UnexpectedCharacter(source) => {
                 Self::format_error(self, source, "unexpected character")
             }
-            Self::CharacterNotFound(source) => {
-                Self::format_error(self, source, "character is not found")
+            Self::IndexOutOfBounds(source) => {
+                Self::format_error(self, source, "index is out of bounds")
             }
         };
         write!(f, "{}", error_message)

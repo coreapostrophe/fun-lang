@@ -20,17 +20,13 @@ pub enum TokenType {
     // KEYWORDS
     And,
     Or,
-    Class,
     Else,
     False,
-    Fn,
     For,
     If,
     Null,
     Print,
     Return,
-    Super,
-    This,
     True,
     Var,
     While,
@@ -53,7 +49,7 @@ pub enum TokenType {
     // white spaces
     NewLine,
 
-    EndOfFile,
+    EOF,
 }
 
 impl Display for TokenType {
@@ -62,6 +58,7 @@ impl Display for TokenType {
     }
 }
 
+#[derive(Debug)]
 pub struct Token {
     token_type: TokenType,
     lexeme: Option<String>,
