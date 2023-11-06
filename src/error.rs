@@ -27,6 +27,7 @@ macro_rules! source {
 pub enum CompilerError {
     UnexpectedCharacter(Source),
     IndexOutOfBounds(Source),
+    UnterminatedString(Source),
 }
 
 impl CompilerError {
@@ -46,6 +47,9 @@ impl Display for CompilerError {
             }
             Self::IndexOutOfBounds(source) => {
                 Self::format_error(self, source, "index is out of bounds")
+            }
+            Self::UnterminatedString(source) => {
+                Self::format_error(self, source, "string was not terminated")
             }
         };
         write!(f, "{}", error_message)

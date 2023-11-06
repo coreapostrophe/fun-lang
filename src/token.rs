@@ -4,8 +4,8 @@ use std::fmt::Display;
 pub enum TokenType {
     // Literals
     Identifier,
-    String,
-    Number,
+    String(String),
+    Number(i32),
 
     // One or two character tokens,
     Equal,
