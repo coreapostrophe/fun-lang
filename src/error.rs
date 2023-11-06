@@ -28,6 +28,7 @@ pub enum CompilerError {
     UnexpectedCharacter(Source),
     IndexOutOfBounds(Source),
     UnterminatedString(Source),
+    ParseFloatError(Source),
 }
 
 impl CompilerError {
@@ -50,6 +51,9 @@ impl Display for CompilerError {
             }
             Self::UnterminatedString(source) => {
                 Self::format_error(self, source, "string was not terminated")
+            }
+            Self::ParseFloatError(source) => {
+                Self::format_error(self, source, "error when parsing float")
             }
         };
         write!(f, "{}", error_message)

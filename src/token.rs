@@ -5,7 +5,7 @@ pub enum TokenType {
     // Literals
     Identifier,
     String(String),
-    Number(i32),
+    Number(f32),
 
     // One or two character tokens,
     Equal,

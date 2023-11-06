@@ -30,9 +30,9 @@ impl Scanner {
         self.crawled_index >= self.source.len()
     }
 
-    fn advance(&mut self) {
-        self.crawled_index += 1;
-        self.current_line_offset += 1;
+    fn advance(&mut self, value: usize) {
+        self.crawled_index += value;
+        self.current_line_offset += value as u32;
     }
 
     fn peek(&mut self, lookahead_offset: usize) -> char {
@@ -52,7 +52,7 @@ impl Scanner {
             None => false,
         };
         if result {
-            self.advance();
+            self.advance(1);
         }
         result
     }
@@ -60,7 +60,7 @@ impl Scanner {
     fn string(&mut self) -> Result<TokenType, CompilerError> {
         let mut is_closed = false;
         'crawler: while !self.is_at_end() {
-            self.advance();
+            self.advance(1);
             if self.peek(0) == '\n' {
                 self.current_line_number += 1;
             }
@@ -76,9 +76,27 @@ impl Scanner {
                 self.current_line_offset
             )))
         } else {
-            let string_value = &self.source[(self.start_index + 1)..self.crawled_index];
-            Ok(TokenType::String(string_value.to_string()))
+            let literal_value = &self.source[(self.start_index + 1)..self.crawled_index];
+            Ok(TokenType::String(literal_value.to_string()))
         }
+    }
+
+    fn number(&mut self) -> Result<TokenType, CompilerError> {
+        while self.peek(1).is_digit(10) {
+            self.advance(1);
+        }
+        if self.peek(1) == '.' && self.peek(2).is_digit(10) {
+            self.advance(2);
+            while self.peek(1).is_digit(10) {
+                self.advance(1);
+            }
+        }
+        let literal_value = &self.source[self.start_index..self.crawled_index + 1];
+        let parsed_literal_value = match literal_value.parse::<f32>() {
+            Ok(value) => Ok(value),
+            Err(_) => Err(CompilerError::IndexOutOfBounds(source!(self.current_line_number, self.current_line_offset)))
+        }?;
+        Ok(TokenType::Number(parsed_literal_value))
     }
 
     fn scan_token(&mut self) -> Result<(), CompilerError> {
@@ -128,7 +146,7 @@ impl Scanner {
             '/' => {
                 if self.match_next('/') {
                     while self.peek(0) != '\n' && !self.is_at_end() {
-                        self.advance();
+                        self.advance(1);
                     }
                     Ok(None)
                 } else {
@@ -144,10 +162,16 @@ impl Scanner {
                 Ok(None)
             }
             '"' => Ok(Some(self.string()?)),
-            _ => Err(CompilerError::UnexpectedCharacter(source!(
-                self.current_line_number,
-                self.current_line_offset
-            ))),
+            c => {
+                if c.is_digit(10) {
+                    Ok(Some(self.number()?))
+                } else {
+                    Err(CompilerError::UnexpectedCharacter(source!(
+                        self.current_line_number,
+                        self.current_line_offset
+                    )))
+                }
+            }
         }?;
 
         match token_type {
@@ -155,7 +179,7 @@ impl Scanner {
             None => (),
         }
 
-        self.advance();
+        self.advance(1);
 
         Ok(())
     }
@@ -271,10 +295,8 @@ mod scanner_tests {
 
     #[test]
     fn parses_string_literals() {
-        let mut scanner = Scanner::new("\"Example string\"");
+        let mut scanner = Scanner::new("+\"Example string\"+");
         let result = scanner.scan_tokens();
-
-        println!("{:?}", scanner.tokens);
 
         assert!(result.is_ok());
         assert_eq!(
@@ -282,7 +304,29 @@ mod scanner_tests {
             format!(
                 "{:?}",
                 vec![
+                    Token::new(TokenType::Plus),
                     Token::new(TokenType::String("Example string".to_string())),
+                    Token::new(TokenType::Plus),
+                    Token::new(TokenType::EOF),
+                ]
+            )
+        )
+    }
+
+    #[test]
+    fn parses_number_literals() {
+        let mut scanner = Scanner::new("+1232.23+");
+        let result = scanner.scan_tokens();
+
+        assert!(result.is_ok());
+        assert_eq!(
+            format!("{:?}", scanner.tokens),
+            format!(
+                "{:?}",
+                vec![
+                    Token::new(TokenType::Plus),
+                    Token::new(TokenType::Number(1232.23_f32)),
+                    Token::new(TokenType::Plus),
                     Token::new(TokenType::EOF),
                 ]
             )
