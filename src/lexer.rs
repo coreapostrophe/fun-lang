@@ -5,7 +5,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Scanner {
+pub struct Lexer {
     source: Option<String>,
     tokens: Vec<Token>,
     start_index: usize,
@@ -14,7 +14,7 @@ pub struct Scanner {
     current_line_offset: u32,
 }
 
-impl Scanner {
+impl Lexer {
     pub fn new() -> Self {
         Self {
             source: None,
@@ -228,12 +228,12 @@ impl Scanner {
 }
 
 #[cfg(test)]
-mod scanner_tests {
+mod lexer_tests {
     use super::*;
 
     #[test]
     fn parses_single_character_lexemes() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("[](){},.-+;*/");
 
         assert!(result.is_ok());
@@ -263,7 +263,7 @@ mod scanner_tests {
 
     #[test]
     fn parses_one_or_two_character_lexemes() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("!!====<<=>>=");
 
         assert!(result.is_ok());
@@ -288,7 +288,7 @@ mod scanner_tests {
 
     #[test]
     fn ignores_comments() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("+//++++++\n+");
 
         assert!(result.is_ok());
@@ -307,7 +307,7 @@ mod scanner_tests {
 
     #[test]
     fn ignores_white_space() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("+ \t\r\n+");
 
         assert!(result.is_ok());
@@ -326,7 +326,7 @@ mod scanner_tests {
 
     #[test]
     fn parses_string_literals() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("+\"Example string\"+");
 
         assert!(result.is_ok());
@@ -346,7 +346,7 @@ mod scanner_tests {
 
     #[test]
     fn parses_number_literals() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("+1232.23+");
 
         assert!(result.is_ok());
@@ -366,7 +366,7 @@ mod scanner_tests {
 
     #[test]
     fn parses_identifiers() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("+abcd1234+");
 
         assert!(result.is_ok());
@@ -386,7 +386,7 @@ mod scanner_tests {
 
     #[test]
     fn parses_keywords() {
-        let mut scanner = Scanner::new();
+        let mut scanner = Lexer::new();
         let result = scanner.scan_tokens("h+and+h");
 
         assert!(result.is_ok());
