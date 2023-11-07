@@ -1,14 +1,1 @@
-# Build
 /target
-/pkg
-/dist
-
-# Lock
-Cargo.lock
-
-# IDE
-/.idea
-/.vscode
-
-# Node
-node_modules
