@@ -25,6 +25,7 @@ macro_rules! source {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum CompilerError {
+    InvalidSource,
     UnexpectedCharacter(Source),
     IndexOutOfBounds(Source),
     UnterminatedString(Source),
@@ -32,28 +33,32 @@ pub enum CompilerError {
 }
 
 impl CompilerError {
-    fn format_error(error: &CompilerError, source: &Source, message: &str) -> String {
-        format!(
-            "line {}:{} {:?} - {}",
-            source.line_number, source.line_offset, error, message
-        )
+    fn format_error(error: &CompilerError, source: Option<&Source>, message: &str) -> String {
+        match source {
+            Some(source) => format!(
+                "line {}:{} {:?} - {}",
+                source.line_number, source.line_offset, error, message
+            ),
+            None => format!("{:?} - {}", error, message),
+        }
     }
 }
 
 impl Display for CompilerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error_message = match self {
+            Self::InvalidSource => Self::format_error(self, None, "provided source is invalid"),
             Self::UnexpectedCharacter(source) => {
-                Self::format_error(self, source, "unexpected character")
+                Self::format_error(self, Some(source), "unexpected character")
             }
             Self::IndexOutOfBounds(source) => {
-                Self::format_error(self, source, "index is out of bounds")
+                Self::format_error(self, Some(source), "index is out of bounds")
             }
             Self::UnterminatedString(source) => {
-                Self::format_error(self, source, "string was not terminated")
+                Self::format_error(self, Some(source), "string was not terminated")
             }
             Self::ParseFloatError(source) => {
-                Self::format_error(self, source, "error when parsing float")
+                Self::format_error(self, Some(source), "error when parsing float")
             }
         };
         write!(f, "{}", error_message)

@@ -6,7 +6,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Scanner {
-    source: String,
+    source: Option<String>,
     tokens: Vec<Token>,
     start_index: usize,
     crawled_index: usize,
@@ -15,9 +15,9 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(source: &str) -> Self {
+    pub fn new() -> Self {
         Self {
-            source: source.to_string(),
+            source: None,
             tokens: vec![],
             start_index: 0,
             crawled_index: 0,
@@ -26,8 +26,12 @@ impl Scanner {
         }
     }
 
-    fn is_at_end(&self) -> bool {
-        self.crawled_index >= self.source.len()
+    fn unwrap_source(&self) -> Result<&String, CompilerError> {
+        self.source.as_ref().ok_or(CompilerError::InvalidSource)
+    }
+
+    fn is_at_end(&self) -> Result<bool, CompilerError> {
+        Ok(self.crawled_index >= self.unwrap_source()?.len())
     }
 
     fn advance(&mut self, value: usize) {
@@ -35,36 +39,36 @@ impl Scanner {
         self.current_line_offset += value as u32;
     }
 
-    fn peek(&mut self, lookahead_offset: usize) -> char {
+    fn peek(&mut self, lookahead_offset: usize) -> Result<char, CompilerError> {
         match self
-            .source
+            .unwrap_source()?
             .chars()
             .nth(self.crawled_index + lookahead_offset)
         {
-            Some(c) => c,
-            None => '\0',
+            Some(c) => Ok(c),
+            None => Ok('\0'),
         }
     }
 
-    fn match_next(&mut self, expected: char) -> bool {
-        let result = match self.source.chars().nth(self.crawled_index + 1) {
+    fn match_next(&mut self, expected: char) -> Result<bool, CompilerError> {
+        let result = match self.unwrap_source()?.chars().nth(self.crawled_index + 1) {
             Some(next_char) => next_char == expected,
             None => false,
         };
         if result {
             self.advance(1);
         }
-        result
+        Ok(result)
     }
 
     fn string(&mut self) -> Result<TokenType, CompilerError> {
         let mut is_closed = false;
-        'crawler: while !self.is_at_end() {
+        'crawler: while !self.is_at_end()? {
             self.advance(1);
-            if self.peek(0) == '\n' {
+            if self.peek(0)? == '\n' {
                 self.current_line_number += 1;
             }
-            if self.peek(0) == '"' {
+            if self.peek(0)? == '"' {
                 is_closed = true;
                 break 'crawler;
             }
@@ -76,22 +80,22 @@ impl Scanner {
                 self.current_line_offset
             )))
         } else {
-            let literal_value = &self.source[(self.start_index + 1)..self.crawled_index];
+            let literal_value = &self.unwrap_source()?[(self.start_index + 1)..self.crawled_index];
             Ok(TokenType::String(literal_value.to_string()))
         }
     }
 
     fn number(&mut self) -> Result<TokenType, CompilerError> {
-        while self.peek(1).is_digit(10) {
+        while self.peek(1)?.is_digit(10) {
             self.advance(1);
         }
-        if self.peek(1) == '.' && self.peek(2).is_digit(10) {
+        if self.peek(1)? == '.' && self.peek(2)?.is_digit(10) {
             self.advance(2);
-            while self.peek(1).is_digit(10) {
+            while self.peek(1)?.is_digit(10) {
                 self.advance(1);
             }
         }
-        let literal_value = &self.source[self.start_index..self.crawled_index + 1];
+        let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
         let parsed_literal_value = match literal_value.parse::<f32>() {
             Ok(value) => Ok(value),
             Err(_) => Err(CompilerError::IndexOutOfBounds(source!(
@@ -103,18 +107,19 @@ impl Scanner {
     }
 
     fn identifier(&mut self) -> Result<TokenType, CompilerError> {
-        while self.peek(1).is_alphanumeric() {
+        while self.peek(1)?.is_alphanumeric() {
             self.advance(1);
         }
 
-        let literal_value = &self.source[self.start_index..self.crawled_index + 1];
-        let parsed_keyword = TokenType::get_keyword(literal_value).unwrap_or(TokenType::Identifier(literal_value.to_string()));
-        
+        let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
+        let parsed_keyword = TokenType::get_keyword(literal_value)
+            .unwrap_or(TokenType::Identifier(literal_value.to_string()));
+
         Ok(parsed_keyword)
     }
 
     fn scan_token(&mut self) -> Result<(), CompilerError> {
-        let c = self.peek(0);
+        let c = self.peek(0)?;
 
         let token_type = match c {
             '(' => Ok(Some(TokenType::LeftParen)),
@@ -130,36 +135,36 @@ impl Scanner {
             ';' => Ok(Some(TokenType::Semicolon)),
             '*' => Ok(Some(TokenType::Star)),
             '!' => {
-                if self.match_next('=') {
+                if self.match_next('=')? {
                     Ok(Some(TokenType::BangEqual))
                 } else {
                     Ok(Some(TokenType::Bang))
                 }
             }
             '=' => {
-                if self.match_next('=') {
+                if self.match_next('=')? {
                     Ok(Some(TokenType::EqualEqual))
                 } else {
                     Ok(Some(TokenType::Equal))
                 }
             }
             '<' => {
-                if self.match_next('=') {
+                if self.match_next('=')? {
                     Ok(Some(TokenType::LessEqual))
                 } else {
                     Ok(Some(TokenType::Less))
                 }
             }
             '>' => {
-                if self.match_next('=') {
+                if self.match_next('=')? {
                     Ok(Some(TokenType::GreaterEqual))
                 } else {
                     Ok(Some(TokenType::Greater))
                 }
             }
             '/' => {
-                if self.match_next('/') {
-                    while self.peek(0) != '\n' && !self.is_at_end() {
+                if self.match_next('/')? {
+                    while self.peek(0)? != '\n' && !self.is_at_end()? {
                         self.advance(1);
                     }
                     Ok(None)
@@ -200,8 +205,18 @@ impl Scanner {
         Ok(())
     }
 
-    pub fn scan_tokens(&mut self) -> Result<(), CompilerError> {
-        while !self.is_at_end() {
+    fn clear_state(&mut self) {
+        self.start_index = 0;
+        self.crawled_index = 0;
+        self.current_line_number = 1;
+        self.current_line_offset = 1;
+    }
+
+    pub fn scan_tokens(&mut self, source: &str) -> Result<(), CompilerError> {
+        self.clear_state();
+        self.source = Some(source.to_string());
+
+        while !self.is_at_end()? {
             self.start_index = self.crawled_index;
             self.scan_token()?;
         }
@@ -218,8 +233,8 @@ mod scanner_tests {
 
     #[test]
     fn parses_single_character_lexemes() {
-        let mut scanner = Scanner::new("[](){},.-+;*/");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("[](){},.-+;*/");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -248,8 +263,8 @@ mod scanner_tests {
 
     #[test]
     fn parses_one_or_two_character_lexemes() {
-        let mut scanner = Scanner::new("!!====<<=>>=");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("!!====<<=>>=");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -273,8 +288,8 @@ mod scanner_tests {
 
     #[test]
     fn ignores_comments() {
-        let mut scanner = Scanner::new("+//++++++\n+");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("+//++++++\n+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -292,8 +307,8 @@ mod scanner_tests {
 
     #[test]
     fn ignores_white_space() {
-        let mut scanner = Scanner::new("+ \t\r\n+");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("+ \t\r\n+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -311,8 +326,8 @@ mod scanner_tests {
 
     #[test]
     fn parses_string_literals() {
-        let mut scanner = Scanner::new("+\"Example string\"+");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("+\"Example string\"+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -331,8 +346,8 @@ mod scanner_tests {
 
     #[test]
     fn parses_number_literals() {
-        let mut scanner = Scanner::new("+1232.23+");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("+1232.23+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -351,8 +366,8 @@ mod scanner_tests {
 
     #[test]
     fn parses_identifiers() {
-        let mut scanner = Scanner::new("+abcd1234+");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("+abcd1234+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -371,8 +386,8 @@ mod scanner_tests {
 
     #[test]
     fn parses_keywords() {
-        let mut scanner = Scanner::new("h+and+h");
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new();
+        let result = scanner.scan_tokens("h+and+h");
 
         assert!(result.is_ok());
         assert_eq!(
