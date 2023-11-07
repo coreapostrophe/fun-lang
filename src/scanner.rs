@@ -94,9 +94,23 @@ impl Scanner {
         let literal_value = &self.source[self.start_index..self.crawled_index + 1];
         let parsed_literal_value = match literal_value.parse::<f32>() {
             Ok(value) => Ok(value),
-            Err(_) => Err(CompilerError::IndexOutOfBounds(source!(self.current_line_number, self.current_line_offset)))
+            Err(_) => Err(CompilerError::IndexOutOfBounds(source!(
+                self.current_line_number,
+                self.current_line_offset
+            ))),
         }?;
         Ok(TokenType::Number(parsed_literal_value))
+    }
+
+    fn identifier(&mut self) -> Result<TokenType, CompilerError> {
+        while self.peek(1).is_alphanumeric() {
+            self.advance(1);
+        }
+
+        let literal_value = &self.source[self.start_index..self.crawled_index + 1];
+        let parsed_keyword = TokenType::get_keyword(literal_value).unwrap_or(TokenType::Identifier(literal_value.to_string()));
+        
+        Ok(parsed_keyword)
     }
 
     fn scan_token(&mut self) -> Result<(), CompilerError> {
@@ -165,6 +179,8 @@ impl Scanner {
             c => {
                 if c.is_digit(10) {
                     Ok(Some(self.number()?))
+                } else if c.is_alphabetic() {
+                    Ok(Some(self.identifier()?))
                 } else {
                     Err(CompilerError::UnexpectedCharacter(source!(
                         self.current_line_number,
@@ -327,6 +343,48 @@ mod scanner_tests {
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::Number(1232.23_f32)),
                     Token::new(TokenType::Plus),
+                    Token::new(TokenType::EOF),
+                ]
+            )
+        )
+    }
+
+    #[test]
+    fn parses_identifiers() {
+        let mut scanner = Scanner::new("+abcd1234+");
+        let result = scanner.scan_tokens();
+
+        assert!(result.is_ok());
+        assert_eq!(
+            format!("{:?}", scanner.tokens),
+            format!(
+                "{:?}",
+                vec![
+                    Token::new(TokenType::Plus),
+                    Token::new(TokenType::Identifier("abcd1234".to_string())),
+                    Token::new(TokenType::Plus),
+                    Token::new(TokenType::EOF),
+                ]
+            )
+        )
+    }
+
+    #[test]
+    fn parses_keywords() {
+        let mut scanner = Scanner::new("h+and+h");
+        let result = scanner.scan_tokens();
+
+        assert!(result.is_ok());
+        assert_eq!(
+            format!("{:?}", scanner.tokens),
+            format!(
+                "{:?}",
+                vec![
+                    Token::new(TokenType::Identifier("h".to_string())),
+                    Token::new(TokenType::Plus),
+                    Token::new(TokenType::And),
+                    Token::new(TokenType::Plus),
+                    Token::new(TokenType::Identifier("h".to_string())),
                     Token::new(TokenType::EOF),
                 ]
             )

@@ -1,9 +1,9 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug)]
 pub enum TokenType {
     // Literals
-    Identifier,
+    Identifier(String),
     String(String),
     Number(f32),
 
@@ -28,7 +28,7 @@ pub enum TokenType {
     Print,
     Return,
     True,
-    Var,
+    Let,
     While,
 
     // Single-character
@@ -50,6 +50,26 @@ pub enum TokenType {
     NewLine,
 
     EOF,
+}
+
+impl TokenType {
+    pub fn get_keyword(text: &str) -> Option<TokenType> {
+        match text {
+            "and" => Some(TokenType::And),
+            "or" => Some(TokenType::Or),
+            "else" => Some(TokenType::Else),
+            "true" => Some(TokenType::True),
+            "false" => Some(TokenType::False),
+            "for" => Some(TokenType::For),
+            "if" => Some(TokenType::If),
+            "null" => Some(TokenType::Null),
+            "print" => Some(TokenType::Print),
+            "return" => Some(TokenType::Return),
+            "let" => Some(TokenType::Let),
+            "while" => Some(TokenType::While),
+            _ => None,
+        }
+    }
 }
 
 impl Display for TokenType {
