@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::Display;
 
 #[derive(Debug)]
 pub enum TokenType {
@@ -30,6 +30,7 @@ pub enum TokenType {
     True,
     Let,
     While,
+    This,
 
     // Single-character
     LeftBracket,
@@ -67,6 +68,7 @@ impl TokenType {
             "return" => Some(TokenType::Return),
             "let" => Some(TokenType::Let),
             "while" => Some(TokenType::While),
+            "this" => Some(TokenType::This),
             _ => None,
         }
     }
