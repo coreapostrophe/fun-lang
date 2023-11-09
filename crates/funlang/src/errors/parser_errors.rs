@@ -5,7 +5,7 @@ use super::lexer_errors::Source;
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum ParserError {
-    UnprovidedTokens,
+    MissingTokens,
     InvalidTokenIndex,
     InvalidLiteralData,
     UnterminatedGrouping,
@@ -27,18 +27,20 @@ impl ParserError {
 impl Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error_message = match self {
-            Self::UnprovidedTokens => {
-                Self::format_error(self, None, "token array was not provided")
+            Self::MissingTokens => {
+                Self::format_error(self, None, "parser does not have a token list input")
             }
             Self::InvalidTokenIndex => {
-                Self::format_error(self, None, "token index is out of bounds")
+                Self::format_error(self, None, "token being indexed is out of bounds")
             }
-            Self::InvalidLiteralData => Self::format_error(self, None, "literal data is invalid"),
+            Self::InvalidLiteralData => {
+                Self::format_error(self, None, "attempted to parse invalid data")
+            }
             Self::UnterminatedGrouping => {
                 Self::format_error(self, None, "grouping symbol was not closed")
             }
             Self::UnexpectedExpression => {
-                Self::format_error(self, None, "unable to recognize expression")
+                Self::format_error(self, None, "attempted to parse an unexpected expression")
             }
         };
         write!(f, "{}", error_message)

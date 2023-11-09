@@ -88,18 +88,24 @@ impl Display for TokenType {
 }
 
 #[derive(Debug, Clone)]
+pub struct Span {
+    pub line: u32,
+    pub line_offset: u32
+}
+
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: Option<String>,
     pub literal_data: Option<LiteralData>,
-    pub line: Option<u32>,
+    pub span: Option<Span>
 }
 
 impl Token {
     pub fn new(token_type: TokenType) -> Self {
         Self {
             token_type,
-            line: None,
+            span: None,
             lexeme: None,
             literal_data: None,
         }
@@ -108,8 +114,8 @@ impl Token {
         self.literal_data = Some(value);
         self
     }
-    pub fn set_line(mut self, value: u32) -> Self {
-        self.line = Some(value);
+    pub fn set_span(mut self, value: Span) -> Self {
+        self.span = Some(value);
         self
     }
     pub fn set_lexeme(mut self, value: String) -> Self {

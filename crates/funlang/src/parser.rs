@@ -20,7 +20,7 @@ impl Parser {
     fn unwrap_tokens(&self) -> Result<&Vec<Token>, ParserError> {
         self.tokens
             .as_ref()
-            .ok_or(ParserError::UnprovidedTokens)
+            .ok_or(ParserError::MissingTokens)
     }
 
     fn _synchronize(&mut self) -> Result<(), ParserError> {
