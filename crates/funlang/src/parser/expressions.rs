@@ -4,10 +4,12 @@ use crate::token::Token;
 
 #[derive(Expr)]
 pub enum Expr {
-    #[production(Expr, Token, Expr)]
+    #[production(left:Token, token:Token, right:Expr)]
     Binary(Box<BinaryExpr>),
-    #[production(Expr)]
+
+    #[production(expression:Expr)]
     Grouping(Box<GroupingExpr>),
-    #[production(Token, Expr)]
+
+    #[production(operator:Token, right:Expr)]
     Unary(Box<UnaryExpr>),
 }

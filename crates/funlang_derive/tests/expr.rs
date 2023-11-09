@@ -1,9 +1,7 @@
 #[derive(funlang_derive::Expr)]
 enum _Expr {
-    #[production = ()]
+    #[production(String = left, String = right)]
     Grouped,
-    #[production(GroupedExpr)]
-    Test,
 }
 
 fn main() {}

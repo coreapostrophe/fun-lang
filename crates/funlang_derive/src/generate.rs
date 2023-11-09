@@ -49,14 +49,17 @@ pub fn parse_fields(attribute: &Attribute) -> Option<Vec<TokenStream>> {
             let tokens_string = &meta_list.tokens.to_string();
             let token_list: Vec<TokenStream> = tokens_string
                 .split(',')
-                .enumerate()
-                .map(|(index, s)| {
-                    let trimmed_str = s.trim();
-                    let snaked_str = capital_to_snake(trimmed_str);
-                    let parsed_snaked_str: Expr =
-                        syn::parse_str(&format!("{}{}", snaked_str, index)).unwrap();
-                    let parsed_trimmed_str: Expr = syn::parse_str(&trimmed_str).unwrap();
-                    quote!(pub #parsed_snaked_str : #parsed_trimmed_str,)
+                .map(|named_value| {
+                    let trimmed_named_value = named_value.trim();
+                    let splitted_named_value: Vec<String> = trimmed_named_value
+                        .split(':')
+                        .map(|s| s.trim().to_string())
+                        .collect();
+                    let identifier = splitted_named_value.get(0).unwrap();
+                    let identifier: Expr = syn::parse_str(&identifier).unwrap();
+                    let parsed_type = splitted_named_value.get(1).unwrap();
+                    let parsed_type: Expr = syn::parse_str(&parsed_type).unwrap();
+                    quote!(pub #identifier : #parsed_type,)
                 })
                 .collect();
             Some(token_list)
@@ -64,15 +67,4 @@ pub fn parse_fields(attribute: &Attribute) -> Option<Vec<TokenStream>> {
         Meta::NameValue(_) => None,
         Meta::Path(_) => None,
     }
-}
-
-fn capital_to_snake(s: &str) -> String {
-    let mut result = String::new();
-    for (i, c) in s.chars().enumerate() {
-        if c.is_uppercase() && i > 0 {
-            result.push('_');
-        }
-        result.push(c.to_ascii_lowercase());
-    }
-    result
 }
