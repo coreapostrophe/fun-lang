@@ -1,5 +1,5 @@
 use crate::{
-    error::InterpreterError,
+    errors::parser_errors::ParserError,
     expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
     token::{LiteralData, Token, TokenType},
 };
@@ -17,13 +17,13 @@ impl Parser {
         }
     }
 
-    fn unwrap_tokens(&self) -> Result<&Vec<Token>, InterpreterError> {
+    fn unwrap_tokens(&self) -> Result<&Vec<Token>, ParserError> {
         self.tokens
             .as_ref()
-            .ok_or(InterpreterError::UnprovidedTokens)
+            .ok_or(ParserError::UnprovidedTokens)
     }
 
-    fn _synchronize(&mut self) -> Result<(), InterpreterError> {
+    fn _synchronize(&mut self) -> Result<(), ParserError> {
         if self.previous()?.token_type == TokenType::Semicolon {
             return Ok(());
         }
@@ -45,8 +45,8 @@ impl Parser {
     fn consume(
         &mut self,
         token_type: TokenType,
-        error: InterpreterError,
-    ) -> Result<(), InterpreterError> {
+        error: ParserError,
+    ) -> Result<(), ParserError> {
         if self.check(&token_type)? {
             self.advance()?;
             Ok(())
@@ -55,7 +55,7 @@ impl Parser {
         }
     }
 
-    fn primary(&mut self) -> Result<Expr, InterpreterError> {
+    fn primary(&mut self) -> Result<Expr, ParserError> {
         if self.r#match(vec![TokenType::False])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
                 literal: LiteralData::False,
@@ -73,21 +73,21 @@ impl Parser {
                 literal: self
                     .previous()?
                     .literal_data
-                    .ok_or(InterpreterError::InvalidLiteralData)?,
+                    .ok_or(ParserError::InvalidLiteralData)?,
             })))
         } else if self.r#match(vec![TokenType::LeftParen])? {
             let expr = self.expression()?;
             self.consume(
                 TokenType::RightParen,
-                InterpreterError::UnterminatedGrouping,
+                ParserError::UnterminatedGrouping,
             )?;
             Ok(Expr::Grouping(Box::new(GroupingExpr { expression: expr })))
         } else {
-            Err(InterpreterError::UnexpectedExpression)
+            Err(ParserError::UnexpectedExpression)
         }
     }
 
-    fn unary(&mut self) -> Result<Expr, InterpreterError> {
+    fn unary(&mut self) -> Result<Expr, ParserError> {
         if self.r#match(vec![TokenType::Bang, TokenType::Minus])? {
             let operator = self.previous()?;
             let right = self.unary()?;
@@ -97,7 +97,7 @@ impl Parser {
         }
     }
 
-    fn factor(&mut self) -> Result<Expr, InterpreterError> {
+    fn factor(&mut self) -> Result<Expr, ParserError> {
         let mut expr = self.unary()?;
 
         while self.r#match(vec![TokenType::Slash, TokenType::Star])? {
@@ -113,7 +113,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn term(&mut self) -> Result<Expr, InterpreterError> {
+    fn term(&mut self) -> Result<Expr, ParserError> {
         let mut expr = self.factor()?;
 
         while self.r#match(vec![TokenType::Minus, TokenType::Plus])? {
@@ -129,7 +129,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn comparison(&mut self) -> Result<Expr, InterpreterError> {
+    fn comparison(&mut self) -> Result<Expr, ParserError> {
         let mut expr = self.term()?;
 
         while self.r#match(vec![
@@ -150,25 +150,25 @@ impl Parser {
         Ok(expr)
     }
 
-    fn previous(&self) -> Result<Token, InterpreterError> {
+    fn previous(&self) -> Result<Token, ParserError> {
         match self.unwrap_tokens()?.get(self.crawled_index - 1) {
             Some(token) => Ok(token.clone()),
-            None => Err(InterpreterError::InvalidTokenIndex),
+            None => Err(ParserError::InvalidTokenIndex),
         }
     }
 
-    fn is_at_end(&self) -> Result<bool, InterpreterError> {
+    fn is_at_end(&self) -> Result<bool, ParserError> {
         Ok(self.peek()?.token_type == TokenType::EOF)
     }
 
-    fn peek(&self) -> Result<Token, InterpreterError> {
+    fn peek(&self) -> Result<Token, ParserError> {
         match self.unwrap_tokens()?.get(self.crawled_index) {
             Some(token) => Ok(token.clone()),
-            None => Err(InterpreterError::InvalidTokenIndex),
+            None => Err(ParserError::InvalidTokenIndex),
         }
     }
 
-    fn advance(&mut self) -> Result<Option<Token>, InterpreterError> {
+    fn advance(&mut self) -> Result<Option<Token>, ParserError> {
         if !self.is_at_end()? {
             self.crawled_index += 1;
             Ok(None)
@@ -177,7 +177,7 @@ impl Parser {
         }
     }
 
-    fn check(&self, token_type: &TokenType) -> Result<bool, InterpreterError> {
+    fn check(&self, token_type: &TokenType) -> Result<bool, ParserError> {
         if self.is_at_end()? {
             Ok(false)
         } else {
@@ -185,7 +185,7 @@ impl Parser {
         }
     }
 
-    fn r#match(&mut self, token_types: Vec<TokenType>) -> Result<bool, InterpreterError> {
+    fn r#match(&mut self, token_types: Vec<TokenType>) -> Result<bool, ParserError> {
         let mut result = false;
 
         for token_type in token_types {
@@ -198,7 +198,7 @@ impl Parser {
         Ok(result)
     }
 
-    fn equality(&mut self) -> Result<Expr, InterpreterError> {
+    fn equality(&mut self) -> Result<Expr, ParserError> {
         let mut expr: Expr = self.comparison()?;
 
         while self.r#match(vec![TokenType::BangEqual, TokenType::EqualEqual])? {
@@ -214,7 +214,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn expression(&mut self) -> Result<Expr, InterpreterError> {
+    fn expression(&mut self) -> Result<Expr, ParserError> {
         Ok(self.equality()?)
     }
 
@@ -222,7 +222,7 @@ impl Parser {
         self.crawled_index = 0;
     }
 
-    pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Expr, InterpreterError> {
+    pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Expr, ParserError> {
         self.clear_state();
         self.tokens = Some(tokens);
 

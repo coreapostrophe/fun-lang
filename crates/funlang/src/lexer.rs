@@ -1,5 +1,5 @@
 use crate::{
-    error::InterpreterError,
+    errors::lexer_errors::LexerError,
     literal_identifier, literal_number, literal_string, source,
     token::{Token, TokenType},
 };
@@ -26,13 +26,13 @@ impl Lexer {
         }
     }
 
-    fn unwrap_source(&self) -> Result<&String, InterpreterError> {
+    fn unwrap_source(&self) -> Result<&String, LexerError> {
         self.source
             .as_ref()
-            .ok_or(InterpreterError::UnprovidedSource)
+            .ok_or(LexerError::UnprovidedSource)
     }
 
-    fn is_at_end(&self) -> Result<bool, InterpreterError> {
+    fn is_at_end(&self) -> Result<bool, LexerError> {
         Ok(self.crawled_index >= self.unwrap_source()?.len())
     }
 
@@ -41,7 +41,7 @@ impl Lexer {
         self.current_line_offset += value as u32;
     }
 
-    fn peek(&mut self, lookahead_offset: usize) -> Result<char, InterpreterError> {
+    fn peek(&mut self, lookahead_offset: usize) -> Result<char, LexerError> {
         match self
             .unwrap_source()?
             .chars()
@@ -52,7 +52,7 @@ impl Lexer {
         }
     }
 
-    fn match_next(&mut self, expected: char) -> Result<bool, InterpreterError> {
+    fn match_next(&mut self, expected: char) -> Result<bool, LexerError> {
         let is_match = match self.unwrap_source()?.chars().nth(self.crawled_index + 1) {
             Some(next_char) => next_char == expected,
             None => false,
@@ -63,7 +63,7 @@ impl Lexer {
         Ok(is_match)
     }
 
-    fn string(&mut self) -> Result<Token, InterpreterError> {
+    fn string(&mut self) -> Result<Token, LexerError> {
         let mut is_closed = false;
         'crawler: while !self.is_at_end()? {
             self.advance(1);
@@ -77,7 +77,7 @@ impl Lexer {
         }
 
         if !is_closed {
-            Err(InterpreterError::UnterminatedString(source!(
+            Err(LexerError::UnterminatedString(source!(
                 self.current_line_number,
                 self.current_line_offset
             )))
@@ -87,7 +87,7 @@ impl Lexer {
         }
     }
 
-    fn number(&mut self) -> Result<Token, InterpreterError> {
+    fn number(&mut self) -> Result<Token, LexerError> {
         while self.peek(1)?.is_digit(10) {
             self.advance(1);
         }
@@ -100,7 +100,7 @@ impl Lexer {
         let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
         let parsed_literal_value = match literal_value.parse::<f32>() {
             Ok(value) => Ok(value),
-            Err(_) => Err(InterpreterError::InvalidCharacterIndex(source!(
+            Err(_) => Err(LexerError::InvalidCharacterIndex(source!(
                 self.current_line_number,
                 self.current_line_offset
             ))),
@@ -108,7 +108,7 @@ impl Lexer {
         Ok(literal_number!(parsed_literal_value))
     }
 
-    fn identifier(&mut self) -> Result<Token, InterpreterError> {
+    fn identifier(&mut self) -> Result<Token, LexerError> {
         while self.peek(1)?.is_alphanumeric() {
             self.advance(1);
         }
@@ -124,7 +124,7 @@ impl Lexer {
         Ok(token)
     }
 
-    fn scan_token(&mut self) -> Result<(), InterpreterError> {
+    fn scan_token(&mut self) -> Result<(), LexerError> {
         let c = self.peek(0)?;
 
         let token = match c {
@@ -193,7 +193,7 @@ impl Lexer {
                 } else if c.is_alphabetic() {
                     Ok(Some(self.identifier()?))
                 } else {
-                    Err(InterpreterError::UnexpectedCharacter(source!(
+                    Err(LexerError::UnexpectedCharacter(source!(
                         self.current_line_number,
                         self.current_line_offset
                     )))
@@ -218,7 +218,7 @@ impl Lexer {
         self.current_line_offset = 1;
     }
 
-    pub fn tokenize(&mut self, source: &str) -> Result<(), InterpreterError> {
+    pub fn tokenize(&mut self, source: &str) -> Result<(), LexerError> {
         self.clear_state();
         self.source = Some(source.to_string());
 

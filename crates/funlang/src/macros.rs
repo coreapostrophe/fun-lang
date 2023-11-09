@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! source {
     ($line_number:expr, $line_offset:expr) => {
-        crate::error::Source::new($line_number, $line_offset)
+        crate::errors::lexer_errors::Source::new($line_number, $line_offset)
     };
 }
 

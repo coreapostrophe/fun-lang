@@ -2,8 +2,8 @@ use std::{error::Error, fmt::Display};
 
 #[derive(Debug)]
 pub struct Source {
-    line_number: u32,
-    line_offset: u32,
+    pub line_number: u32,
+    pub line_offset: u32,
 }
 
 impl Source {
@@ -17,21 +17,16 @@ impl Source {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub enum InterpreterError {
-    UnprovidedTokens,
+pub enum LexerError {
     UnprovidedSource,
-    InvalidTokenIndex,
-    InvalidLiteralData,
-    UnterminatedGrouping,
-    UnexpectedExpression,
     UnexpectedCharacter(Source),
     InvalidCharacterIndex(Source),
     UnterminatedString(Source),
     ParseFloatError(Source),
 }
 
-impl InterpreterError {
-    fn format_error(error: &InterpreterError, source: Option<&Source>, message: &str) -> String {
+impl LexerError {
+    fn format_error(error: &LexerError, source: Option<&Source>, message: &str) -> String {
         match source {
             Some(source) => format!(
                 "[line {}:{} {:?}] - {}",
@@ -42,15 +37,10 @@ impl InterpreterError {
     }
 }
 
-impl Display for InterpreterError {
+impl Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error_message = match self {
             Self::UnprovidedSource => Self::format_error(self, None, "source was not provided"),
-            Self::UnprovidedTokens => Self::format_error(self, None, "token array was not provided"),
-            Self::InvalidTokenIndex => Self::format_error(self, None, "token index is out of bounds"),
-            Self::InvalidLiteralData => Self::format_error(self, None, "literal data is invalid"),
-            Self::UnterminatedGrouping => Self::format_error(self, None, "grouping symbol was not closed"),
-            Self::UnexpectedExpression => Self::format_error(self, None, "unable to recognize expression"),
             Self::UnexpectedCharacter(source) => {
                 Self::format_error(self, Some(source), "unexpected character")
             }
@@ -68,4 +58,4 @@ impl Display for InterpreterError {
     }
 }
 
-impl Error for InterpreterError {}
+impl Error for LexerError {}
