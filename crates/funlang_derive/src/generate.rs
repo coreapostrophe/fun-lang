@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
-use quote::quote;
-use syn::{Attribute, Data, DeriveInput, Variant, Meta, Expr};
+use quote::{quote, quote_spanned};
+use syn::{Attribute, Data, DeriveInput, Expr, Meta, Variant};
 
 pub fn generate_struct(input: DeriveInput) -> TokenStream {
     let data = &input.data;
@@ -22,14 +22,19 @@ pub fn parse_data(data: &Data) -> Option<TokenStream> {
 
 pub fn parse_variant(variant: &Variant) -> TokenStream {
     let identifier = &variant.ident;
+    let formatted_identifier: Expr = {
+        let identifier_string = &identifier.to_string();
+        let formatted_identifier_string = format!("{}Expr", identifier_string);
+        syn::parse_str(&formatted_identifier_string).unwrap()
+    };
     let fields = match variant.attrs.get(0) {
         Some(attribute) => parse_fields(attribute),
-        _ => None
+        _ => None,
     };
 
     match fields {
-        Some(fields) => quote!(
-            pub struct #identifier {
+        Some(fields) => quote_spanned!(identifier.span() =>
+            pub struct #formatted_identifier {
                 #(#fields)*
             }
         ),
@@ -42,17 +47,22 @@ pub fn parse_fields(attribute: &Attribute) -> Option<Vec<TokenStream>> {
     match meta {
         Meta::List(meta_list) => {
             let tokens_string = &meta_list.tokens.to_string();
-            let token_list: Vec<TokenStream> = tokens_string.split(',').enumerate().map(|(index, s)| {
-                let trimmed_str = s.trim();
-                let snaked_str = capital_to_snake(trimmed_str);
-                let parsed_snaked_str: Expr = syn::parse_str(&format!("{}{}", snaked_str, index)).unwrap();
-                let parsed_trimmed_str: Expr = syn::parse_str(&trimmed_str).unwrap();
-                quote!(pub #parsed_snaked_str : #parsed_trimmed_str,)
-            }).collect();
+            let token_list: Vec<TokenStream> = tokens_string
+                .split(',')
+                .enumerate()
+                .map(|(index, s)| {
+                    let trimmed_str = s.trim();
+                    let snaked_str = capital_to_snake(trimmed_str);
+                    let parsed_snaked_str: Expr =
+                        syn::parse_str(&format!("{}{}", snaked_str, index)).unwrap();
+                    let parsed_trimmed_str: Expr = syn::parse_str(&trimmed_str).unwrap();
+                    quote!(pub #parsed_snaked_str : #parsed_trimmed_str,)
+                })
+                .collect();
             Some(token_list)
-        },
+        }
         Meta::NameValue(_) => None,
-        Meta::Path(_) => None
+        Meta::Path(_) => None,
     }
 }
 

@@ -1,19 +1,13 @@
+use funlang_derive::Expr;
+
 use crate::token::Token;
 
-pub enum Expr {}
-
-pub struct Binary {
-    pub left: Expr,
-    pub operand: Token,
-    pub right: Expr,
-}
-
-impl Binary {
-    pub fn new(left: Expr, operand: Token, right: Expr) -> Self {
-        Self {
-            left,
-            operand,
-            right,
-        }
-    }
+#[derive(Expr)]
+pub enum Expr {
+    #[production(Expr, Token, Expr)]
+    Binary(Box<BinaryExpr>),
+    #[production(Expr)]
+    Grouping(Box<GroupingExpr>),
+    #[production(Token, Expr)]
+    Unary(Box<UnaryExpr>),
 }
