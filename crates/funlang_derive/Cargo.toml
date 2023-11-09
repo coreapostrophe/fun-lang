@@ -8,6 +8,10 @@ edition = "2021"
 [lib]
 proc_macro = true
 
+[dev-dependencies]
+trybuild = { version = "1.0.85", features = ["diff"] }
+
 [dependencies]
+proc-macro2 = "1"
 syn = "2.0.39"
 quote = "1.0"
