@@ -87,9 +87,9 @@ impl Display for TokenType {
 
 #[derive(Debug)]
 pub struct Token {
-    token_type: TokenType,
-    lexeme: Option<String>,
-    line: Option<u32>,
+    pub token_type: TokenType,
+    pub lexeme: Option<String>,
+    pub line: Option<u32>,
 }
 
 impl Token {
@@ -100,7 +100,6 @@ impl Token {
             line: None,
         }
     }
-
     pub fn set_line(mut self, value: u32) -> Self {
         self.line = Some(value);
         self
@@ -108,17 +107,5 @@ impl Token {
     pub fn set_lexeme(mut self, value: String) -> Self {
         self.lexeme = Some(value);
         self
-    }
-}
-
-impl ToString for Token {
-    fn to_string(&self) -> String {
-        let line = match self.line {
-            Some(value) => value.to_string(),
-            None => "".to_string(),
-        };
-        let lexeme = self.lexeme.clone().unwrap_or("".to_string());
-
-        format!("line:{} {} {}", line, self.token_type, lexeme)
     }
 }

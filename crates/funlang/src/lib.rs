@@ -1,5 +1,5 @@
 pub mod error;
+pub mod expr;
 pub mod lexer;
-pub mod token;
-pub mod parser;
 pub mod macros;
+pub mod token;
