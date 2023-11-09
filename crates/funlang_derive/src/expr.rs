@@ -2,17 +2,17 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::{Attribute, Data, DeriveInput, Expr, Meta, Variant};
 
-pub fn generate_struct(input: DeriveInput) -> TokenStream {
+pub fn generate_expr(input: DeriveInput) -> TokenStream {
     let data = &input.data;
-    let generated_struct = parse_data(data);
+    let generated_struct = handle_data(data);
     quote!(#generated_struct)
 }
 
-pub fn parse_data(data: &Data) -> Option<TokenStream> {
+pub fn handle_data(data: &Data) -> Option<TokenStream> {
     match data {
         Data::Enum(data_enum) => {
             let variants = &data_enum.variants;
-            let struct_definitions = variants.iter().map(|variant| parse_variant(variant));
+            let struct_definitions = variants.iter().map(|variant| build_struct(variant));
             Some(quote!(#(#struct_definitions)*))
         }
         Data::Struct(_) => None,
@@ -20,7 +20,7 @@ pub fn parse_data(data: &Data) -> Option<TokenStream> {
     }
 }
 
-pub fn parse_variant(variant: &Variant) -> TokenStream {
+pub fn build_struct(variant: &Variant) -> TokenStream {
     let identifier = &variant.ident;
     let formatted_identifier: Expr = {
         let identifier_string = &identifier.to_string();
@@ -28,7 +28,7 @@ pub fn parse_variant(variant: &Variant) -> TokenStream {
         syn::parse_str(&formatted_identifier_string).unwrap()
     };
     let fields = match variant.attrs.get(0) {
-        Some(attribute) => parse_fields(attribute),
+        Some(attribute) => build_fields(attribute),
         _ => None,
     };
 
@@ -42,7 +42,7 @@ pub fn parse_variant(variant: &Variant) -> TokenStream {
     }
 }
 
-pub fn parse_fields(attribute: &Attribute) -> Option<Vec<TokenStream>> {
+pub fn build_fields(attribute: &Attribute) -> Option<Vec<TokenStream>> {
     let meta = &attribute.meta;
     match meta {
         Meta::List(meta_list) => {

@@ -15,13 +15,6 @@ impl Source {
     }
 }
 
-#[macro_export]
-macro_rules! source {
-    ($line_number:expr, $line_offset:expr) => {
-        Source::new($line_number, $line_offset)
-    };
-}
-
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum CompilerError {

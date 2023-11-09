@@ -1,6 +1,6 @@
 use funlang_derive::Expr;
 
-use crate::token::Token;
+use crate::token::{LiteralData, Token};
 
 #[derive(Expr)]
 pub enum Expr {
@@ -9,6 +9,9 @@ pub enum Expr {
 
     #[production(expression:Expr)]
     Grouping(Box<GroupingExpr>),
+
+    #[production(literal:LiteralData)]
+    Literal(Box<LiteralExpr>),
 
     #[production(operator:Token, right:Expr)]
     Unary(Box<UnaryExpr>),
