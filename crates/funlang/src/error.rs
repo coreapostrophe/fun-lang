@@ -21,6 +21,9 @@ pub enum InterpreterError {
     UnprovidedTokens,
     UnprovidedSource,
     InvalidTokenIndex,
+    InvalidLiteralData,
+    UnterminatedGrouping,
+    UnexpectedExpression,
     UnexpectedCharacter(Source),
     InvalidCharacterIndex(Source),
     UnterminatedString(Source),
@@ -45,6 +48,9 @@ impl Display for InterpreterError {
             Self::UnprovidedSource => Self::format_error(self, None, "source was not provided"),
             Self::UnprovidedTokens => Self::format_error(self, None, "token array was not provided"),
             Self::InvalidTokenIndex => Self::format_error(self, None, "token index is out of bounds"),
+            Self::InvalidLiteralData => Self::format_error(self, None, "literal data is invalid"),
+            Self::UnterminatedGrouping => Self::format_error(self, None, "grouping symbol was not closed"),
+            Self::UnexpectedExpression => Self::format_error(self, None, "unable to recognize expression"),
             Self::UnexpectedCharacter(source) => {
                 Self::format_error(self, Some(source), "unexpected character")
             }

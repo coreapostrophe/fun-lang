@@ -1,7 +1,7 @@
 use crate::{
     error::InterpreterError,
-    expr::{BinaryExpr, Expr, LiteralExpr, UnaryExpr},
-    token::{Token, TokenType},
+    expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
+    token::{LiteralData, Token, TokenType},
 };
 
 pub struct Parser {
@@ -23,21 +23,67 @@ impl Parser {
             .ok_or(InterpreterError::UnprovidedTokens)
     }
 
+    fn _synchronize(&mut self) -> Result<(), InterpreterError> {
+        if self.previous()?.token_type == TokenType::Semicolon {
+            return Ok(());
+        }
+
+        match self.peek()?.token_type {
+            TokenType::Let => Ok(()),
+            TokenType::For => Ok(()),
+            TokenType::If => Ok(()),
+            TokenType::While => Ok(()),
+            TokenType::Print => Ok(()),
+            TokenType::Return => Ok(()),
+            _ => {
+                self.advance()?;
+                Ok(())
+            }
+        }
+    }
+
+    fn consume(
+        &mut self,
+        token_type: TokenType,
+        error: InterpreterError,
+    ) -> Result<(), InterpreterError> {
+        if self.check(&token_type)? {
+            self.advance()?;
+            Ok(())
+        } else {
+            Err(error)
+        }
+    }
+
     fn primary(&mut self) -> Result<Expr, InterpreterError> {
         if self.r#match(vec![TokenType::False])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
-                literal: crate::token::LiteralData::False,
+                literal: LiteralData::False,
             })))
         } else if self.r#match(vec![TokenType::True])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
-                literal: crate::token::LiteralData::True,
+                literal: LiteralData::True,
             })))
         } else if self.r#match(vec![TokenType::Null])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
-                literal: crate::token::LiteralData::Null,
+                literal: LiteralData::Null,
             })))
+        } else if self.r#match(vec![TokenType::Number, TokenType::String])? {
+            Ok(Expr::Literal(Box::new(LiteralExpr {
+                literal: self
+                    .previous()?
+                    .literal_data
+                    .ok_or(InterpreterError::InvalidLiteralData)?,
+            })))
+        } else if self.r#match(vec![TokenType::LeftParen])? {
+            let expr = self.expression()?;
+            self.consume(
+                TokenType::RightParen,
+                InterpreterError::UnterminatedGrouping,
+            )?;
+            Ok(Expr::Grouping(Box::new(GroupingExpr { expression: expr })))
         } else {
-            todo!()
+            Err(InterpreterError::UnexpectedExpression)
         }
     }
 
@@ -176,8 +222,30 @@ impl Parser {
         self.crawled_index = 0;
     }
 
-    pub fn parse(&mut self, tokens: Vec<Token>) {
+    pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Expr, InterpreterError> {
         self.clear_state();
         self.tokens = Some(tokens);
+
+        Ok(self.expression()?)
+    }
+}
+
+#[cfg(test)]
+mod parser_tests {
+    use crate::lexer::Lexer;
+
+    use super::*;
+
+    #[test]
+    fn parses_expressions() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("(1 + 1) / 6");
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer.tokens.clone());
+
+        assert!(lexer_result.is_ok());
+        assert!(parser_result.is_ok());
+        
+        println!("{:#?}", parser_result);
     }
 }

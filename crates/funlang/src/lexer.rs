@@ -6,8 +6,8 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Lexer {
-    source: Option<String>,
-    tokens: Vec<Token>,
+    pub source: Option<String>,
+    pub tokens: Vec<Token>,
     start_index: usize,
     crawled_index: usize,
     current_line_number: u32,
@@ -53,14 +53,14 @@ impl Lexer {
     }
 
     fn match_next(&mut self, expected: char) -> Result<bool, InterpreterError> {
-        let result = match self.unwrap_source()?.chars().nth(self.crawled_index + 1) {
+        let is_match = match self.unwrap_source()?.chars().nth(self.crawled_index + 1) {
             Some(next_char) => next_char == expected,
             None => false,
         };
-        if result {
+        if is_match {
             self.advance(1);
         }
-        Ok(result)
+        Ok(is_match)
     }
 
     fn string(&mut self) -> Result<Token, InterpreterError> {
@@ -239,12 +239,12 @@ mod lexer_tests {
 
     #[test]
     fn parses_single_character_lexemes() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("[](){},.-+;*/");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("[](){},.-+;*/");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
@@ -269,12 +269,12 @@ mod lexer_tests {
 
     #[test]
     fn parses_one_or_two_character_lexemes() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("!!====<<=>>=");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("!!====<<=>>=");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
@@ -294,12 +294,12 @@ mod lexer_tests {
 
     #[test]
     fn ignores_comments() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("+//++++++\n+");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("+//++++++\n+");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
@@ -313,12 +313,12 @@ mod lexer_tests {
 
     #[test]
     fn ignores_white_space() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("+ \t\r\n+");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("+ \t\r\n+");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
@@ -332,12 +332,12 @@ mod lexer_tests {
 
     #[test]
     fn parses_string_literals() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("+\"Example string\"+");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("+\"Example string\"+");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
@@ -352,12 +352,12 @@ mod lexer_tests {
 
     #[test]
     fn parses_number_literals() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("+1232.23+");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("+1232.23+");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
@@ -372,12 +372,12 @@ mod lexer_tests {
 
     #[test]
     fn parses_identifiers() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("+abcd1234+");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("+abcd1234+");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
@@ -392,12 +392,12 @@ mod lexer_tests {
 
     #[test]
     fn parses_keywords() {
-        let mut scanner = Lexer::new();
-        let result = scanner.tokenize("h+and+h");
+        let mut lexer = Lexer::new();
+        let result = lexer.tokenize("h+and+h");
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", scanner.tokens),
+            format!("{:?}", lexer.tokens),
             format!(
                 "{:?}",
                 vec![
