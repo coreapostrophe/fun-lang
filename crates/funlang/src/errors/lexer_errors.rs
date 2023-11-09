@@ -29,10 +29,10 @@ impl LexerError {
     fn format_error(error: &LexerError, source: Option<&Source>, message: &str) -> String {
         match source {
             Some(source) => format!(
-                "[line {}:{} {:?}] - {}",
+                "[line {}:{} {:?}] {}",
                 source.line_number, source.line_offset, error, message
             ),
-            None => format!("{:?} - {}", error, message),
+            None => format!("[{:?}] {}", error, message),
         }
     }
 }

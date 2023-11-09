@@ -1,7 +1,5 @@
 use std::{error::Error, fmt::Display};
 
-use super::lexer_errors::Source;
-
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum ParserError {
@@ -13,34 +11,26 @@ pub enum ParserError {
 }
 
 impl ParserError {
-    fn format_error(error: &ParserError, source: Option<&Source>, message: &str) -> String {
-        match source {
-            Some(source) => format!(
-                "[line {}:{} {:?}] - {}",
-                source.line_number, source.line_offset, error, message
-            ),
-            None => format!("{:?} - {}", error, message),
-        }
+    fn format_error(error: &ParserError, message: &str) -> String {
+        format!("[{:?}] {}", error, message)
     }
 }
 
 impl Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error_message = match self {
+            Self::InvalidLiteralData => Self::format_error(self, "attempted to parse invalid data"),
             Self::MissingTokens => {
-                Self::format_error(self, None, "parser does not have a token list input")
+                Self::format_error(self, "parser does not have a token list input")
             }
             Self::InvalidTokenIndex => {
-                Self::format_error(self, None, "token being indexed is out of bounds")
-            }
-            Self::InvalidLiteralData => {
-                Self::format_error(self, None, "attempted to parse invalid data")
+                Self::format_error(self, "token being indexed is out of bounds")
             }
             Self::UnterminatedGrouping => {
-                Self::format_error(self, None, "grouping symbol was not closed")
+                Self::format_error(self, "grouping symbol was not closed")
             }
             Self::UnexpectedExpression => {
-                Self::format_error(self, None, "attempted to parse an unexpected expression")
+                Self::format_error(self, "attempted to parse an unexpected expression")
             }
         };
         write!(f, "{}", error_message)
