@@ -27,7 +27,9 @@ impl Lexer {
     }
 
     fn unwrap_source(&self) -> Result<&String, InterpreterError> {
-        self.source.as_ref().ok_or(InterpreterError::UnprovidedSource)
+        self.source
+            .as_ref()
+            .ok_or(InterpreterError::UnprovidedSource)
     }
 
     fn is_at_end(&self) -> Result<bool, InterpreterError> {
@@ -61,7 +63,7 @@ impl Lexer {
         Ok(result)
     }
 
-    fn string(&mut self) -> Result<TokenType, InterpreterError> {
+    fn string(&mut self) -> Result<Token, InterpreterError> {
         let mut is_closed = false;
         'crawler: while !self.is_at_end()? {
             self.advance(1);
@@ -85,7 +87,7 @@ impl Lexer {
         }
     }
 
-    fn number(&mut self) -> Result<TokenType, InterpreterError> {
+    fn number(&mut self) -> Result<Token, InterpreterError> {
         while self.peek(1)?.is_digit(10) {
             self.advance(1);
         }
@@ -106,60 +108,64 @@ impl Lexer {
         Ok(literal_number!(parsed_literal_value))
     }
 
-    fn identifier(&mut self) -> Result<TokenType, InterpreterError> {
+    fn identifier(&mut self) -> Result<Token, InterpreterError> {
         while self.peek(1)?.is_alphanumeric() {
             self.advance(1);
         }
 
         let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
-        let parsed_keyword = TokenType::get_keyword(literal_value)
-            .unwrap_or(literal_identifier!(literal_value.to_string()));
+        let parsed_keyword = TokenType::get_keyword(literal_value);
 
-        Ok(parsed_keyword)
+        let token = match parsed_keyword {
+            Some(keyword) => Token::new(keyword),
+            None => literal_identifier!(literal_value.to_string()),
+        };
+
+        Ok(token)
     }
 
     fn scan_token(&mut self) -> Result<(), InterpreterError> {
         let c = self.peek(0)?;
 
-        let token_type = match c {
-            '(' => Ok(Some(TokenType::LeftParen)),
-            ')' => Ok(Some(TokenType::RightParen)),
-            '[' => Ok(Some(TokenType::LeftBracket)),
-            ']' => Ok(Some(TokenType::RightBracket)),
-            '{' => Ok(Some(TokenType::LeftBrace)),
-            '}' => Ok(Some(TokenType::RightBrace)),
-            '.' => Ok(Some(TokenType::Dot)),
-            ',' => Ok(Some(TokenType::Comma)),
-            '-' => Ok(Some(TokenType::Minus)),
-            '+' => Ok(Some(TokenType::Plus)),
-            ';' => Ok(Some(TokenType::Semicolon)),
-            '*' => Ok(Some(TokenType::Star)),
+        let token = match c {
+            '(' => Ok(Some(Token::new(TokenType::LeftParen))),
+            ')' => Ok(Some(Token::new(TokenType::RightParen))),
+            '[' => Ok(Some(Token::new(TokenType::LeftBracket))),
+            ']' => Ok(Some(Token::new(TokenType::RightBracket))),
+            '{' => Ok(Some(Token::new(TokenType::LeftBrace))),
+            '}' => Ok(Some(Token::new(TokenType::RightBrace))),
+            '.' => Ok(Some(Token::new(TokenType::Dot))),
+            ',' => Ok(Some(Token::new(TokenType::Comma))),
+            '-' => Ok(Some(Token::new(TokenType::Minus))),
+            '+' => Ok(Some(Token::new(TokenType::Plus))),
+            ';' => Ok(Some(Token::new(TokenType::Semicolon))),
+            '*' => Ok(Some(Token::new(TokenType::Star))),
             '!' => {
                 if self.match_next('=')? {
-                    Ok(Some(TokenType::BangEqual))
+                    Ok(Some(Token::new(TokenType::BangEqual)))
                 } else {
-                    Ok(Some(TokenType::Bang))
+                    Ok(Some(Token::new(TokenType::Bang)))
                 }
             }
             '=' => {
                 if self.match_next('=')? {
-                    Ok(Some(TokenType::EqualEqual))
+                    Ok(Some(Token::new(TokenType::EqualEqual)))
                 } else {
-                    Ok(Some(TokenType::Equal))
+                    Ok(Some(Token::new(TokenType::Equal)))
                 }
             }
             '<' => {
                 if self.match_next('=')? {
-                    Ok(Some(TokenType::LessEqual))
+                    Ok(Some(Token::new(TokenType::LessEqual)))
                 } else {
-                    Ok(Some(TokenType::Less))
+                    Ok(Some(Token::new(TokenType::Less)))
                 }
             }
             '>' => {
                 if self.match_next('=')? {
-                    Ok(Some(TokenType::GreaterEqual))
+                    Ok(Some(Token::new(TokenType::GreaterEqual)))
                 } else {
-                    Ok(Some(TokenType::Greater))
+                    Ok(Some(Token::new(TokenType::Greater)))
                 }
             }
             '/' => {
@@ -169,7 +175,7 @@ impl Lexer {
                     }
                     Ok(None)
                 } else {
-                    Ok(Some(TokenType::Slash))
+                    Ok(Some(Token::new(TokenType::Slash)))
                 }
             }
             ' ' => Ok(None),
@@ -195,8 +201,8 @@ impl Lexer {
             }
         }?;
 
-        match token_type {
-            Some(token_type) => self.tokens.push(Token::new(token_type)),
+        match token {
+            Some(token) => self.tokens.push(token),
             None => (),
         }
 
@@ -230,7 +236,6 @@ impl Lexer {
 #[cfg(test)]
 mod lexer_tests {
     use super::*;
-    use crate::{literal_identifier, literal_number, literal_string};
 
     #[test]
     fn parses_single_character_lexemes() {
@@ -337,7 +342,7 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus),
-                    Token::new(literal_string!("Example string".to_string())),
+                    literal_string!("Example string".to_string()),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::EOF),
                 ]
@@ -357,7 +362,7 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus),
-                    Token::new(literal_number!(1232.23_f32)),
+                    literal_number!(1232.23_f32),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::EOF),
                 ]
@@ -377,7 +382,7 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus),
-                    Token::new(literal_identifier!("abcd1234".to_string())),
+                    literal_identifier!("abcd1234".to_string()),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::EOF),
                 ]
@@ -396,11 +401,11 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(literal_identifier!("h".to_string())),
+                    literal_identifier!("h".to_string()),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::And),
                     Token::new(TokenType::Plus),
-                    Token::new(literal_identifier!("h".to_string())),
+                    literal_identifier!("h".to_string()),
                     Token::new(TokenType::EOF),
                 ]
             )

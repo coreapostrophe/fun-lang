@@ -8,26 +8,23 @@ macro_rules! source {
 #[macro_export]
 macro_rules! literal_number {
     ($value:expr) => {
-        crate::token::TokenType::Literal(
-            crate::token::LiteralData::Number($value)
-        )
+        crate::token::Token::new(TokenType::Number)
+            .set_literal_data(crate::token::LiteralData::Number($value))
     };
 }
 
 #[macro_export]
 macro_rules! literal_string {
     ($value:expr) => {
-        crate::token::TokenType::Literal(
-            crate::token::LiteralData::String($value)
-        )
+        crate::token::Token::new(TokenType::String)
+            .set_literal_data(crate::token::LiteralData::String($value))
     };
 }
 
 #[macro_export]
 macro_rules! literal_identifier {
     ($value:expr) => {
-        crate::token::TokenType::Literal(
-            crate::token::LiteralData::Identifier($value)
-        )
+        crate::token::Token::new(TokenType::Identifier)
+            .set_literal_data(crate::token::LiteralData::Identifier($value))
     };
 }

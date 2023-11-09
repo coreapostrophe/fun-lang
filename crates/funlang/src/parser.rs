@@ -144,7 +144,7 @@ impl Parser {
 
         for token_type in token_types {
             if self.check(&token_type)? {
-                self.advance();
+                self.advance()?;
                 result = true;
             }
         }

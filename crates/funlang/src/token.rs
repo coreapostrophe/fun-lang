@@ -5,15 +5,17 @@ pub enum LiteralData {
     Identifier(String),
     String(String),
     Number(f32),
-    True,
     False,
-    Null,
+    True,
+    Null
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Literals
-    Literal(LiteralData),
+    Identifier,
+    String,
+    Number,
 
     // One or two character tokens,
     Equal,
@@ -89,6 +91,7 @@ impl Display for TokenType {
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: Option<String>,
+    pub literal_data: Option<LiteralData>,
     pub line: Option<u32>,
 }
 
@@ -96,9 +99,14 @@ impl Token {
     pub fn new(token_type: TokenType) -> Self {
         Self {
             token_type,
-            lexeme: None,
             line: None,
+            lexeme: None,
+            literal_data: None,
         }
+    }
+    pub fn set_literal_data(mut self, value: LiteralData) -> Self {
+        self.literal_data = Some(value);
+        self
     }
     pub fn set_line(mut self, value: u32) -> Self {
         self.line = Some(value);
