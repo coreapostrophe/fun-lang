@@ -195,10 +195,8 @@ impl Lexer {
 
         match token {
             Some(token) => {
-                let token = token.set_span(Span {
-                    line: self.current_line_number,
-                    line_offset: self.start_index as u32,
-                });
+                let token =
+                    token.set_span(Span::new(self.current_line_number, self.start_index as u32));
                 self.tokens.push(token);
             }
             None => (),
@@ -224,10 +222,11 @@ impl Lexer {
             self.scan_token()?;
         }
 
-        self.tokens.push(Token::new(TokenType::EOF).set_span(Span {
-            line: self.current_line_number,
-            line_offset: self.start_index as u32 + 1,
-        }));
+        self.tokens
+            .push(Token::new(TokenType::EOF).set_span(Span::new(
+                self.current_line_number,
+                self.start_index as u32 + 1,
+            )));
 
         Ok(())
     }
@@ -248,62 +247,20 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::LeftBracket).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    Token::new(TokenType::RightBracket).set_span(Span {
-                        line: 1,
-                        line_offset: 1
-                    }),
-                    Token::new(TokenType::LeftParen).set_span(Span {
-                        line: 1,
-                        line_offset: 2
-                    }),
-                    Token::new(TokenType::RightParen).set_span(Span {
-                        line: 1,
-                        line_offset: 3
-                    }),
-                    Token::new(TokenType::LeftBrace).set_span(Span {
-                        line: 1,
-                        line_offset: 4
-                    }),
-                    Token::new(TokenType::RightBrace).set_span(Span {
-                        line: 1,
-                        line_offset: 5
-                    }),
-                    Token::new(TokenType::Comma).set_span(Span {
-                        line: 1,
-                        line_offset: 6
-                    }),
-                    Token::new(TokenType::Dot).set_span(Span {
-                        line: 1,
-                        line_offset: 7
-                    }),
-                    Token::new(TokenType::Minus).set_span(Span {
-                        line: 1,
-                        line_offset: 8
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 9
-                    }),
-                    Token::new(TokenType::Semicolon).set_span(Span {
-                        line: 1,
-                        line_offset: 10
-                    }),
-                    Token::new(TokenType::Star).set_span(Span {
-                        line: 1,
-                        line_offset: 11
-                    }),
-                    Token::new(TokenType::Slash).set_span(Span {
-                        line: 1,
-                        line_offset: 12
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 1,
-                        line_offset: 13
-                    })
+                    Token::new(TokenType::LeftBracket).set_span(Span::new(1, 0)),
+                    Token::new(TokenType::RightBracket).set_span(Span::new(1, 1)),
+                    Token::new(TokenType::LeftParen).set_span(Span::new(1, 2)),
+                    Token::new(TokenType::RightParen).set_span(Span::new(1, 3)),
+                    Token::new(TokenType::LeftBrace).set_span(Span::new(1, 4)),
+                    Token::new(TokenType::RightBrace).set_span(Span::new(1, 5)),
+                    Token::new(TokenType::Comma).set_span(Span::new(1, 6)),
+                    Token::new(TokenType::Dot).set_span(Span::new(1, 7)),
+                    Token::new(TokenType::Minus).set_span(Span::new(1, 8)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 9)),
+                    Token::new(TokenType::Semicolon).set_span(Span::new(1, 10)),
+                    Token::new(TokenType::Star).set_span(Span::new(1, 11)),
+                    Token::new(TokenType::Slash).set_span(Span::new(1, 12)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 13))
                 ]
             )
         )
@@ -320,42 +277,15 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Bang).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    Token::new(TokenType::BangEqual).set_span(Span {
-                        line: 1,
-                        line_offset: 1
-                    }),
-                    Token::new(TokenType::EqualEqual).set_span(Span {
-                        line: 1,
-                        line_offset: 3
-                    }),
-                    Token::new(TokenType::Equal).set_span(Span {
-                        line: 1,
-                        line_offset: 5
-                    }),
-                    Token::new(TokenType::Less).set_span(Span {
-                        line: 1,
-                        line_offset: 6
-                    }),
-                    Token::new(TokenType::LessEqual).set_span(Span {
-                        line: 1,
-                        line_offset: 7
-                    }),
-                    Token::new(TokenType::Greater).set_span(Span {
-                        line: 1,
-                        line_offset: 9
-                    }),
-                    Token::new(TokenType::GreaterEqual).set_span(Span {
-                        line: 1,
-                        line_offset: 10
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 1,
-                        line_offset: 11
-                    }),
+                    Token::new(TokenType::Bang).set_span(Span::new(1, 0)),
+                    Token::new(TokenType::BangEqual).set_span(Span::new(1, 1)),
+                    Token::new(TokenType::EqualEqual).set_span(Span::new(1, 3)),
+                    Token::new(TokenType::Equal).set_span(Span::new(1, 5)),
+                    Token::new(TokenType::Less).set_span(Span::new(1, 6)),
+                    Token::new(TokenType::LessEqual).set_span(Span::new(1, 7)),
+                    Token::new(TokenType::Greater).set_span(Span::new(1, 9)),
+                    Token::new(TokenType::GreaterEqual).set_span(Span::new(1, 10)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 11)),
                 ]
             )
         )
@@ -372,18 +302,9 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 10
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 1,
-                        line_offset: 11
-                    }),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 0)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 10)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 11)),
                 ]
             )
         )
@@ -400,18 +321,9 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 2,
-                        line_offset: 5
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 2,
-                        line_offset: 6
-                    }),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 0)),
+                    Token::new(TokenType::Plus).set_span(Span::new(2, 5)),
+                    Token::new(TokenType::EOF).set_span(Span::new(2, 6)),
                 ]
             )
         )
@@ -428,22 +340,10 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    token_lit_string!("Example string".to_string()).set_span(Span {
-                        line: 1,
-                        line_offset: 1
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 17
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 1,
-                        line_offset: 18
-                    }),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 0)),
+                    token_lit_string!("Example string".to_string()).set_span(Span::new(1, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 17)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 18)),
                 ]
             )
         )
@@ -460,22 +360,10 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    token_lit_number!(1232.23_f32).set_span(Span {
-                        line: 1,
-                        line_offset: 1
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 8
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 1,
-                        line_offset: 9
-                    }),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 0)),
+                    token_lit_number!(1232.23_f32).set_span(Span::new(1, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 8)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 9)),
                 ]
             )
         )
@@ -492,22 +380,10 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    token_lit_identifier!("abcd1234".to_string()).set_span(Span {
-                        line: 1,
-                        line_offset: 1
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 9
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 1,
-                        line_offset: 10
-                    }),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 0)),
+                    token_lit_identifier!("abcd1234".to_string()).set_span(Span::new(1, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 9)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 10)),
                 ]
             )
         )
@@ -524,30 +400,12 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    token_lit_identifier!("h".to_string()).set_span(Span {
-                        line: 1,
-                        line_offset: 0
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 1
-                    }),
-                    Token::new(TokenType::And).set_span(Span {
-                        line: 1,
-                        line_offset: 2
-                    }),
-                    Token::new(TokenType::Plus).set_span(Span {
-                        line: 1,
-                        line_offset: 5
-                    }),
-                    token_lit_identifier!("h".to_string()).set_span(Span {
-                        line: 1,
-                        line_offset: 6
-                    }),
-                    Token::new(TokenType::EOF).set_span(Span {
-                        line: 1,
-                        line_offset: 7
-                    }),
+                    token_lit_identifier!("h".to_string()).set_span(Span::new(1, 0)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 1)),
+                    Token::new(TokenType::And).set_span(Span::new(1, 2)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 5)),
+                    token_lit_identifier!("h".to_string()).set_span(Span::new(1, 6)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 7)),
                 ]
             )
         )

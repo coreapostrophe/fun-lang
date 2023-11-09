@@ -7,7 +7,7 @@ pub enum LiteralData {
     Number(f32),
     False,
     True,
-    Null
+    Null,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -90,7 +90,13 @@ impl Display for TokenType {
 #[derive(Debug, Clone)]
 pub struct Span {
     pub line: u32,
-    pub line_offset: u32
+    pub col: u32,
+}
+
+impl Span {
+    pub fn new(line: u32, col: u32) -> Self {
+        Self { line, col }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -98,7 +104,7 @@ pub struct Token {
     pub token_type: TokenType,
     pub lexeme: Option<String>,
     pub literal_data: Option<LiteralData>,
-    pub span: Option<Span>
+    pub span: Option<Span>,
 }
 
 impl Token {
