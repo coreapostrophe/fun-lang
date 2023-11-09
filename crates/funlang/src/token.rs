@@ -52,9 +52,6 @@ pub enum TokenType {
     Slash,
     Star,
 
-    // white spaces
-    NewLine,
-
     EOF,
 }
 
