@@ -1,7 +1,7 @@
 use crate::{
     error::{CompilerError, Source},
     source,
-    token::{Token, TokenType},
+    token::{Token, TokenType, LiteralData},
 };
 
 #[derive(Debug)]
@@ -81,7 +81,7 @@ impl Lexer {
             )))
         } else {
             let literal_value = &self.unwrap_source()?[(self.start_index + 1)..self.crawled_index];
-            Ok(TokenType::String(literal_value.to_string()))
+            Ok(TokenType::Literal(LiteralData::String(literal_value.to_string())))
         }
     }
 
@@ -103,7 +103,7 @@ impl Lexer {
                 self.current_line_offset
             ))),
         }?;
-        Ok(TokenType::Number(parsed_literal_value))
+        Ok(TokenType::Literal(LiteralData::Number(parsed_literal_value)))
     }
 
     fn identifier(&mut self) -> Result<TokenType, CompilerError> {
@@ -113,7 +113,7 @@ impl Lexer {
 
         let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
         let parsed_keyword = TokenType::get_keyword(literal_value)
-            .unwrap_or(TokenType::Identifier(literal_value.to_string()));
+            .unwrap_or(TokenType::Literal(LiteralData::Identifier(literal_value.to_string())));
 
         Ok(parsed_keyword)
     }
@@ -336,7 +336,7 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus),
-                    Token::new(TokenType::String("Example string".to_string())),
+                    Token::new(TokenType::Literal(LiteralData::String("Example string".to_string()))),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::EOF),
                 ]
@@ -356,7 +356,7 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus),
-                    Token::new(TokenType::Number(1232.23_f32)),
+                    Token::new(TokenType::Literal(LiteralData::Number(1232.23_f32))),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::EOF),
                 ]
@@ -376,7 +376,7 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus),
-                    Token::new(TokenType::Identifier("abcd1234".to_string())),
+                    Token::new(TokenType::Literal(LiteralData::Identifier("abcd1234".to_string()))),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::EOF),
                 ]
@@ -395,11 +395,11 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Identifier("h".to_string())),
+                    Token::new(TokenType::Literal(LiteralData::Identifier("h".to_string()))),
                     Token::new(TokenType::Plus),
                     Token::new(TokenType::And),
                     Token::new(TokenType::Plus),
-                    Token::new(TokenType::Identifier("h".to_string())),
+                    Token::new(TokenType::Literal(LiteralData::Identifier("h".to_string()))),
                     Token::new(TokenType::EOF),
                 ]
             )

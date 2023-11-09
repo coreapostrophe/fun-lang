@@ -1,11 +1,16 @@
 use std::fmt::Display;
 
 #[derive(Debug)]
-pub enum TokenType {
-    // Literals
+pub enum LiteralData {
     Identifier(String),
     String(String),
     Number(f32),
+}
+
+#[derive(Debug)]
+pub enum TokenType {
+    // Literals
+    Literal(LiteralData),
 
     // One or two character tokens,
     Equal,
