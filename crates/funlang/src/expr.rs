@@ -4,7 +4,7 @@ use crate::token::{LiteralData, Token};
 
 #[derive(Expr, Debug)]
 pub enum Expr {
-    #[production(left:Expr, token:Token, right:Expr)]
+    #[production(left:Expr, operator:Token, right:Expr)]
     Binary(Box<BinaryExpr>),
 
     #[production(expression:Expr)]

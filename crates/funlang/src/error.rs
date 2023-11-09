@@ -17,19 +17,21 @@ impl Source {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub enum CompilerError {
-    InvalidSource,
+pub enum InterpreterError {
+    UnprovidedTokens,
+    UnprovidedSource,
+    InvalidTokenIndex,
     UnexpectedCharacter(Source),
-    IndexOutOfBounds(Source),
+    InvalidCharacterIndex(Source),
     UnterminatedString(Source),
     ParseFloatError(Source),
 }
 
-impl CompilerError {
-    fn format_error(error: &CompilerError, source: Option<&Source>, message: &str) -> String {
+impl InterpreterError {
+    fn format_error(error: &InterpreterError, source: Option<&Source>, message: &str) -> String {
         match source {
             Some(source) => format!(
-                "line {}:{} {:?} - {}",
+                "[line {}:{} {:?}] - {}",
                 source.line_number, source.line_offset, error, message
             ),
             None => format!("{:?} - {}", error, message),
@@ -37,15 +39,17 @@ impl CompilerError {
     }
 }
 
-impl Display for CompilerError {
+impl Display for InterpreterError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error_message = match self {
-            Self::InvalidSource => Self::format_error(self, None, "provided source is invalid"),
+            Self::UnprovidedSource => Self::format_error(self, None, "source was not provided"),
+            Self::UnprovidedTokens => Self::format_error(self, None, "token array was not provided"),
+            Self::InvalidTokenIndex => Self::format_error(self, None, "token index is out of bounds"),
             Self::UnexpectedCharacter(source) => {
                 Self::format_error(self, Some(source), "unexpected character")
             }
-            Self::IndexOutOfBounds(source) => {
-                Self::format_error(self, Some(source), "index is out of bounds")
+            Self::InvalidCharacterIndex(source) => {
+                Self::format_error(self, Some(source), "character index is out of bounds")
             }
             Self::UnterminatedString(source) => {
                 Self::format_error(self, Some(source), "string was not terminated")
@@ -58,4 +62,4 @@ impl Display for CompilerError {
     }
 }
 
-impl Error for CompilerError {}
+impl Error for InterpreterError {}

@@ -1,5 +1,5 @@
 use crate::{
-    error::CompilerError,
+    error::InterpreterError,
     literal_identifier, literal_number, literal_string, source,
     token::{Token, TokenType},
 };
@@ -26,11 +26,11 @@ impl Lexer {
         }
     }
 
-    fn unwrap_source(&self) -> Result<&String, CompilerError> {
-        self.source.as_ref().ok_or(CompilerError::InvalidSource)
+    fn unwrap_source(&self) -> Result<&String, InterpreterError> {
+        self.source.as_ref().ok_or(InterpreterError::UnprovidedSource)
     }
 
-    fn is_at_end(&self) -> Result<bool, CompilerError> {
+    fn is_at_end(&self) -> Result<bool, InterpreterError> {
         Ok(self.crawled_index >= self.unwrap_source()?.len())
     }
 
@@ -39,7 +39,7 @@ impl Lexer {
         self.current_line_offset += value as u32;
     }
 
-    fn peek(&mut self, lookahead_offset: usize) -> Result<char, CompilerError> {
+    fn peek(&mut self, lookahead_offset: usize) -> Result<char, InterpreterError> {
         match self
             .unwrap_source()?
             .chars()
@@ -50,7 +50,7 @@ impl Lexer {
         }
     }
 
-    fn match_next(&mut self, expected: char) -> Result<bool, CompilerError> {
+    fn match_next(&mut self, expected: char) -> Result<bool, InterpreterError> {
         let result = match self.unwrap_source()?.chars().nth(self.crawled_index + 1) {
             Some(next_char) => next_char == expected,
             None => false,
@@ -61,7 +61,7 @@ impl Lexer {
         Ok(result)
     }
 
-    fn string(&mut self) -> Result<TokenType, CompilerError> {
+    fn string(&mut self) -> Result<TokenType, InterpreterError> {
         let mut is_closed = false;
         'crawler: while !self.is_at_end()? {
             self.advance(1);
@@ -75,7 +75,7 @@ impl Lexer {
         }
 
         if !is_closed {
-            Err(CompilerError::UnterminatedString(source!(
+            Err(InterpreterError::UnterminatedString(source!(
                 self.current_line_number,
                 self.current_line_offset
             )))
@@ -85,7 +85,7 @@ impl Lexer {
         }
     }
 
-    fn number(&mut self) -> Result<TokenType, CompilerError> {
+    fn number(&mut self) -> Result<TokenType, InterpreterError> {
         while self.peek(1)?.is_digit(10) {
             self.advance(1);
         }
@@ -98,7 +98,7 @@ impl Lexer {
         let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
         let parsed_literal_value = match literal_value.parse::<f32>() {
             Ok(value) => Ok(value),
-            Err(_) => Err(CompilerError::IndexOutOfBounds(source!(
+            Err(_) => Err(InterpreterError::InvalidCharacterIndex(source!(
                 self.current_line_number,
                 self.current_line_offset
             ))),
@@ -106,7 +106,7 @@ impl Lexer {
         Ok(literal_number!(parsed_literal_value))
     }
 
-    fn identifier(&mut self) -> Result<TokenType, CompilerError> {
+    fn identifier(&mut self) -> Result<TokenType, InterpreterError> {
         while self.peek(1)?.is_alphanumeric() {
             self.advance(1);
         }
@@ -118,7 +118,7 @@ impl Lexer {
         Ok(parsed_keyword)
     }
 
-    fn scan_token(&mut self) -> Result<(), CompilerError> {
+    fn scan_token(&mut self) -> Result<(), InterpreterError> {
         let c = self.peek(0)?;
 
         let token_type = match c {
@@ -187,7 +187,7 @@ impl Lexer {
                 } else if c.is_alphabetic() {
                     Ok(Some(self.identifier()?))
                 } else {
-                    Err(CompilerError::UnexpectedCharacter(source!(
+                    Err(InterpreterError::UnexpectedCharacter(source!(
                         self.current_line_number,
                         self.current_line_offset
                     )))
@@ -212,7 +212,7 @@ impl Lexer {
         self.current_line_offset = 1;
     }
 
-    pub fn scan_tokens(&mut self, source: &str) -> Result<(), CompilerError> {
+    pub fn tokenize(&mut self, source: &str) -> Result<(), InterpreterError> {
         self.clear_state();
         self.source = Some(source.to_string());
 
@@ -235,7 +235,7 @@ mod lexer_tests {
     #[test]
     fn parses_single_character_lexemes() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("[](){},.-+;*/");
+        let result = scanner.tokenize("[](){},.-+;*/");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -265,7 +265,7 @@ mod lexer_tests {
     #[test]
     fn parses_one_or_two_character_lexemes() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("!!====<<=>>=");
+        let result = scanner.tokenize("!!====<<=>>=");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -290,7 +290,7 @@ mod lexer_tests {
     #[test]
     fn ignores_comments() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("+//++++++\n+");
+        let result = scanner.tokenize("+//++++++\n+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -309,7 +309,7 @@ mod lexer_tests {
     #[test]
     fn ignores_white_space() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("+ \t\r\n+");
+        let result = scanner.tokenize("+ \t\r\n+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -328,7 +328,7 @@ mod lexer_tests {
     #[test]
     fn parses_string_literals() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("+\"Example string\"+");
+        let result = scanner.tokenize("+\"Example string\"+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -348,7 +348,7 @@ mod lexer_tests {
     #[test]
     fn parses_number_literals() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("+1232.23+");
+        let result = scanner.tokenize("+1232.23+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -368,7 +368,7 @@ mod lexer_tests {
     #[test]
     fn parses_identifiers() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("+abcd1234+");
+        let result = scanner.tokenize("+abcd1234+");
 
         assert!(result.is_ok());
         assert_eq!(
@@ -388,7 +388,7 @@ mod lexer_tests {
     #[test]
     fn parses_keywords() {
         let mut scanner = Lexer::new();
-        let result = scanner.scan_tokens("h+and+h");
+        let result = scanner.tokenize("h+and+h");
 
         assert!(result.is_ok());
         assert_eq!(

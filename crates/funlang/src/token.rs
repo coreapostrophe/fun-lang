@@ -1,13 +1,16 @@
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralData {
     Identifier(String),
     String(String),
     Number(f32),
+    True,
+    False,
+    Null,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Literals
     Literal(LiteralData),
@@ -82,7 +85,7 @@ impl Display for TokenType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: Option<String>,
