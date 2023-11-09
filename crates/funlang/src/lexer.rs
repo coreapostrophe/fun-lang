@@ -8,7 +8,6 @@ use crate::{
 #[derive(Debug)]
 pub struct Lexer {
     pub source: Option<String>,
-    pub tokens: Vec<Token>,
     start_index: usize,
     crawled_index: usize,
     current_line_number: u32,
@@ -18,7 +17,6 @@ impl Lexer {
     pub fn new() -> Self {
         Self {
             source: None,
-            tokens: vec![],
             start_index: 0,
             crawled_index: 0,
             current_line_number: 1,
@@ -120,7 +118,7 @@ impl Lexer {
         Ok(token)
     }
 
-    fn scan_token(&mut self) -> Result<(), LexerError> {
+    fn identify_token(&mut self) -> Result<Option<Token>, LexerError> {
         let c = self.peek(0)?;
 
         let token = match c {
@@ -193,18 +191,14 @@ impl Lexer {
             }
         }?;
 
-        match token {
-            Some(token) => {
-                let token =
-                    token.set_span(Span::new(self.current_line_number, self.start_index as u32));
-                self.tokens.push(token);
-            }
-            None => (),
-        }
-
         self.advance(1);
 
-        Ok(())
+        match token {
+            Some(token) => Ok(Some(
+                token.set_span(Span::new(self.current_line_number, self.start_index as u32)),
+            )),
+            None => Ok(None),
+        }
     }
 
     fn clear_state(&mut self) {
@@ -213,22 +207,27 @@ impl Lexer {
         self.current_line_number = 1;
     }
 
-    pub fn tokenize(&mut self, source: &str) -> Result<(), LexerError> {
+    pub fn tokenize(&mut self, source: &str) -> Result<Vec<Token>, LexerError> {
         self.clear_state();
         self.source = Some(source.to_string());
 
+        let mut tokens: Vec<Token> = vec![];
+
         while !self.is_at_end()? {
             self.start_index = self.crawled_index;
-            self.scan_token()?;
+
+            match self.identify_token()? {
+                Some(token) => tokens.push(token),
+                None => (),
+            }
         }
 
-        self.tokens
-            .push(Token::new(TokenType::EOF).set_span(Span::new(
-                self.current_line_number,
-                self.start_index as u32 + 1,
-            )));
+        tokens.push(Token::new(TokenType::EOF).set_span(Span::new(
+            self.current_line_number,
+            self.start_index as u32 + 1,
+        )));
 
-        Ok(())
+        Ok(tokens)
     }
 }
 
@@ -243,7 +242,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![
@@ -273,7 +272,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![
@@ -298,7 +297,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![
@@ -317,7 +316,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![
@@ -336,7 +335,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![
@@ -356,7 +355,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![
@@ -376,7 +375,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![
@@ -396,7 +395,7 @@ mod lexer_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            format!("{:?}", lexer.tokens),
+            format!("{:?}", result.unwrap()),
             format!(
                 "{:?}",
                 vec![

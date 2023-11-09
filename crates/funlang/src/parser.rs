@@ -18,9 +18,7 @@ impl Parser {
     }
 
     fn unwrap_tokens(&self) -> Result<&Vec<Token>, ParserError> {
-        self.tokens
-            .as_ref()
-            .ok_or(ParserError::MissingTokens)
+        self.tokens.as_ref().ok_or(ParserError::MissingTokens)
     }
 
     fn _synchronize(&mut self) -> Result<(), ParserError> {
@@ -42,17 +40,59 @@ impl Parser {
         }
     }
 
-    fn consume(
-        &mut self,
-        token_type: TokenType,
-        error: ParserError,
-    ) -> Result<(), ParserError> {
+    fn is_at_end(&self) -> Result<bool, ParserError> {
+        Ok(self.peek()?.token_type == TokenType::EOF)
+    }
+
+    fn consume(&mut self, token_type: TokenType, error: ParserError) -> Result<(), ParserError> {
         if self.check(&token_type)? {
             self.advance()?;
             Ok(())
         } else {
             Err(error)
         }
+    }
+
+    fn previous(&self) -> Result<Token, ParserError> {
+        match self.unwrap_tokens()?.get(self.crawled_index - 1) {
+            Some(token) => Ok(token.clone()),
+            None => Err(ParserError::InvalidTokenIndex),
+        }
+    }
+
+    fn peek(&self) -> Result<Token, ParserError> {
+        match self.unwrap_tokens()?.get(self.crawled_index) {
+            Some(token) => Ok(token.clone()),
+            None => Err(ParserError::InvalidTokenIndex),
+        }
+    }
+
+    fn advance(&mut self) -> Result<(), ParserError> {
+        if !self.is_at_end()? {
+            self.crawled_index += 1;
+        }
+        Ok(())
+    }
+
+    fn check(&self, token_type: &TokenType) -> Result<bool, ParserError> {
+        if self.is_at_end()? {
+            Ok(false)
+        } else {
+            Ok(self.peek()?.token_type == *token_type)
+        }
+    }
+
+    fn r#match(&mut self, token_types: Vec<TokenType>) -> Result<bool, ParserError> {
+        let mut result = false;
+
+        for token_type in token_types {
+            if self.check(&token_type)? {
+                self.advance()?;
+                result = true;
+            }
+        }
+
+        Ok(result)
     }
 
     fn primary(&mut self) -> Result<Expr, ParserError> {
@@ -77,10 +117,7 @@ impl Parser {
             })))
         } else if self.r#match(vec![TokenType::LeftParen])? {
             let expr = self.expression()?;
-            self.consume(
-                TokenType::RightParen,
-                ParserError::UnterminatedGrouping,
-            )?;
+            self.consume(TokenType::RightParen, ParserError::UnterminatedGrouping)?;
             Ok(Expr::Grouping(Box::new(GroupingExpr { expression: expr })))
         } else {
             Err(ParserError::UnexpectedExpression)
@@ -150,54 +187,6 @@ impl Parser {
         Ok(expr)
     }
 
-    fn previous(&self) -> Result<Token, ParserError> {
-        match self.unwrap_tokens()?.get(self.crawled_index - 1) {
-            Some(token) => Ok(token.clone()),
-            None => Err(ParserError::InvalidTokenIndex),
-        }
-    }
-
-    fn is_at_end(&self) -> Result<bool, ParserError> {
-        Ok(self.peek()?.token_type == TokenType::EOF)
-    }
-
-    fn peek(&self) -> Result<Token, ParserError> {
-        match self.unwrap_tokens()?.get(self.crawled_index) {
-            Some(token) => Ok(token.clone()),
-            None => Err(ParserError::InvalidTokenIndex),
-        }
-    }
-
-    fn advance(&mut self) -> Result<Option<Token>, ParserError> {
-        if !self.is_at_end()? {
-            self.crawled_index += 1;
-            Ok(None)
-        } else {
-            Ok(Some(self.previous()?))
-        }
-    }
-
-    fn check(&self, token_type: &TokenType) -> Result<bool, ParserError> {
-        if self.is_at_end()? {
-            Ok(false)
-        } else {
-            Ok(self.peek()?.token_type == *token_type)
-        }
-    }
-
-    fn r#match(&mut self, token_types: Vec<TokenType>) -> Result<bool, ParserError> {
-        let mut result = false;
-
-        for token_type in token_types {
-            if self.check(&token_type)? {
-                self.advance()?;
-                result = true;
-            }
-        }
-
-        Ok(result)
-    }
-
     fn equality(&mut self) -> Result<Expr, ParserError> {
         let mut expr: Expr = self.comparison()?;
 
@@ -240,12 +229,12 @@ mod parser_tests {
     fn parses_expressions() {
         let mut lexer = Lexer::new();
         let lexer_result = lexer.tokenize("(1 + 1) / 6");
-        let mut parser = Parser::new();
-        let parser_result = parser.parse(lexer.tokens.clone());
-
         assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
-        
-        println!("{:#?}", parser_result);
+
+        println!("\n{:#?}", parser_result.unwrap());
     }
 }
