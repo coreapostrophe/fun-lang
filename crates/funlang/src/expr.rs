@@ -2,7 +2,7 @@ use funlang_derive::Expr;
 
 use crate::{
     errors::parser_errors::ParserError,
-    token::{LiteralData, Token, TokenType},
+    token::{Token, TokenType}, literal::LiteralData,
 };
 
 trait Evaluable<R> {
@@ -26,7 +26,12 @@ pub enum Expr {
 
 impl Evaluable<LiteralData> for Expr {
     fn evaluate(&self) -> Result<LiteralData, ParserError> {
-        unimplemented!()
+        match self {
+            Expr::Unary(unary_expr) => unary_expr.evaluate(),
+            Expr::Binary(binary_expr) => binary_expr.evaluate(),
+            Expr::Literal(literal_expr) => literal_expr.evaluate(),
+            Expr::Grouping(grouping_expr) => grouping_expr.evaluate(),
+        }
     }
 }
 
@@ -42,6 +47,32 @@ impl Evaluable<LiteralData> for GroupingExpr {
     }
 }
 
+impl Evaluable<LiteralData> for BinaryExpr {
+    fn evaluate(&self) -> Result<LiteralData, ParserError> {
+        let _left = self.left.evaluate()?;
+        let _right = self.right.evaluate()?;
+        let operator = &self.operator.token_type;
+
+        match operator {
+            TokenType::Plus => {
+                todo!()
+            }
+            TokenType::Minus => {
+                todo!()
+            }
+            TokenType::Star => {
+                todo!()
+            }
+            TokenType::Slash => {
+                todo!()
+            }
+            _ => {
+                todo!()
+            }
+        }
+    }
+}
+
 impl Evaluable<LiteralData> for UnaryExpr {
     fn evaluate(&self) -> Result<LiteralData, ParserError> {
         let right = self.right.evaluate()?;
@@ -51,10 +82,28 @@ impl Evaluable<LiteralData> for UnaryExpr {
             .as_ref()
             .ok_or(ParserError::MissingSpan)?
             .clone();
-        let token_type = &self.operator.token_type;
+        let operator = &self.operator.token_type;
 
-        match token_type {
-            TokenType::Bang => Err(ParserError::NegatedBoolean(span.clone())),
+        match operator {
+            TokenType::Bang => match right {
+                LiteralData::Null => Ok(LiteralData::Bool(true)),
+                LiteralData::Bool(bool) => Ok(LiteralData::Bool(!bool)),
+                LiteralData::Identifier(_) => Err(ParserError::NegatedIdentifier(span.clone())),
+                LiteralData::Number(number) => {
+                    if number != 0.0 {
+                        Ok(LiteralData::Bool(true))
+                    } else {
+                        Ok(LiteralData::Bool(false))
+                    }
+                }
+                LiteralData::String(string) => {
+                    if string != "".to_string() {
+                        Ok(LiteralData::Bool(true))
+                    } else {
+                        Ok(LiteralData::Bool(false))
+                    }
+                }
+            },
             TokenType::Minus => match right {
                 LiteralData::Null => Ok(LiteralData::Bool(true)),
                 LiteralData::Number(number) => Ok(LiteralData::Number(-number)),
@@ -65,7 +114,7 @@ impl Evaluable<LiteralData> for UnaryExpr {
                     Err(_) => Err(ParserError::InvalidNumber(span.clone())),
                 },
             },
-            _ => Err(ParserError::UnexpectedUnaryOperator(span.clone())),
+            _ => Err(ParserError::InvalidUnaryOperator(span.clone())),
         }
     }
 }

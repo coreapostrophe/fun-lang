@@ -1,13 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum LiteralData {
-    Identifier(String),
-    String(String),
-    Number(f32),
-    Bool(bool),
-    Null,
-}
+use crate::literal::LiteralData;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {

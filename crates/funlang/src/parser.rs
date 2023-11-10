@@ -1,7 +1,7 @@
 use crate::{
     errors::parser_errors::ParserError,
     expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
-    token::{LiteralData, Token, TokenType},
+    token::{Token, TokenType}, literal::LiteralData,
 };
 
 pub struct Parser {
@@ -109,18 +109,24 @@ impl Parser {
                 literal: LiteralData::Null,
             })))
         } else if self.r#match(vec![TokenType::Number, TokenType::String])? {
+            let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
             Ok(Expr::Literal(Box::new(LiteralExpr {
                 literal: self
                     .previous()?
                     .literal_data
-                    .ok_or(ParserError::InvalidLiteralData)?,
+                    .ok_or(ParserError::InvalidLiteralData(span))?,
             })))
         } else if self.r#match(vec![TokenType::LeftParen])? {
             let expr = self.expression()?;
-            self.consume(TokenType::RightParen, ParserError::UnterminatedGrouping)?;
+            let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
+            self.consume(
+                TokenType::RightParen,
+                ParserError::UnterminatedGrouping(span),
+            )?;
             Ok(Expr::Grouping(Box::new(GroupingExpr { expression: expr })))
         } else {
-            Err(ParserError::UnexpectedExpression)
+            let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
+            Err(ParserError::UnexpectedExpression(span))
         }
     }
 

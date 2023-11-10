@@ -8,13 +8,14 @@ pub enum ParserError {
     MissingSpan,
     MissingTokens,
     InvalidTokenIndex,
-    InvalidLiteralData,
-    UnterminatedGrouping,
-    UnexpectedExpression,
     InvalidNumber(Span),
     NegatedBoolean(Span),
     NegatedIdentifier(Span),
-    UnexpectedUnaryOperator(Span),
+    InvalidLiteralData(Span),
+    UnterminatedGrouping(Span),
+    UnexpectedExpression(Span),
+    InvalidUnaryOperator(Span),
+    InvalidBinaryOperator(Span),
 }
 
 impl ParserError {
@@ -29,7 +30,11 @@ impl ParserError {
 impl Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error_message = match self {
-            Self::InvalidLiteralData => Self::format_error(self, None, "invalid data"),
+            Self::InvalidNumber(span) => Self::format_error(self, Some(span), "invalid number"),
+            Self::InvalidLiteralData(span) => Self::format_error(self, Some(span), "invalid data"),
+            Self::InvalidBinaryOperator(span) => {
+                Self::format_error(self, Some(span), "invalid binary operator")
+            }
             Self::MissingSpan => {
                 Self::format_error(self, None, "indexed token does not have a span")
             }
@@ -39,18 +44,17 @@ impl Display for ParserError {
             Self::InvalidTokenIndex => {
                 Self::format_error(self, None, "token being indexed is out of bounds")
             }
-            Self::UnterminatedGrouping => {
-                Self::format_error(self, None, "grouping symbol was not closed")
+            Self::UnterminatedGrouping(span) => {
+                Self::format_error(self, Some(span), "grouping symbol was not closed")
             }
-            Self::UnexpectedExpression => Self::format_error(self, None, "unexpected expression"),
+            Self::UnexpectedExpression(span) => {
+                Self::format_error(self, Some(span), "unexpected expression")
+            }
             Self::NegatedBoolean(span) => {
                 Self::format_error(self, Some(span), "attempted to negate a boolean")
             }
-            Self::UnexpectedUnaryOperator(span) => {
-                Self::format_error(self, Some(span), "unexpected unary operator")
-            }
-            Self::InvalidNumber(span) => {
-                Self::format_error(self, Some(span), "invalid number")
+            Self::InvalidUnaryOperator(span) => {
+                Self::format_error(self, Some(span), "invalid unary operator")
             }
             Self::NegatedIdentifier(span) => {
                 Self::format_error(self, Some(span), "attempted to negate an identifier")

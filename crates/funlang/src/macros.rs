@@ -2,7 +2,7 @@
 macro_rules! token_lit_number {
     ($value:expr) => {
         crate::token::Token::new(TokenType::Number)
-            .set_literal_data(crate::token::LiteralData::Number($value))
+            .set_literal_data(crate::literal::LiteralData::Number($value))
     };
 }
 
@@ -10,7 +10,7 @@ macro_rules! token_lit_number {
 macro_rules! token_lit_string {
     ($value:expr) => {
         crate::token::Token::new(TokenType::String)
-            .set_literal_data(crate::token::LiteralData::String($value))
+            .set_literal_data(crate::literal::LiteralData::String($value))
     };
 }
 
@@ -18,6 +18,6 @@ macro_rules! token_lit_string {
 macro_rules! token_lit_identifier {
     ($value:expr) => {
         crate::token::Token::new(TokenType::Identifier)
-            .set_literal_data(crate::token::LiteralData::Identifier($value))
+            .set_literal_data(crate::literal::LiteralData::Identifier($value))
     };
 }
