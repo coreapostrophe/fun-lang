@@ -34,7 +34,7 @@ pub fn build_struct(variant: &Variant) -> TokenStream {
 
     match fields {
         Some(fields) => quote_spanned!(identifier.span() =>
-            #[derive(std::fmt::Debug)]
+            #[derive(std::fmt::Debug, core::clone::Clone)]
             pub struct #formatted_identifier {
                 #(#fields)*
             }

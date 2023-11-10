@@ -5,8 +5,7 @@ pub enum LiteralData {
     Identifier(String),
     String(String),
     Number(f32),
-    False,
-    True,
+    Bool(bool),
     Null,
 }
 

@@ -1,11 +1,4 @@
 #[macro_export]
-macro_rules! source {
-    ($line_number:expr, $line_offset:expr) => {
-        crate::errors::lexer_errors::Source::new($line_number, $line_offset)
-    };
-}
-
-#[macro_export]
 macro_rules! token_lit_number {
     ($value:expr) => {
         crate::token::Token::new(TokenType::Number)

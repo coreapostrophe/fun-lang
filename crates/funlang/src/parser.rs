@@ -98,11 +98,11 @@ impl Parser {
     fn primary(&mut self) -> Result<Expr, ParserError> {
         if self.r#match(vec![TokenType::False])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
-                literal: LiteralData::False,
+                literal: LiteralData::Bool(false),
             })))
         } else if self.r#match(vec![TokenType::True])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
-                literal: LiteralData::True,
+                literal: LiteralData::Bool(true),
             })))
         } else if self.r#match(vec![TokenType::Null])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {

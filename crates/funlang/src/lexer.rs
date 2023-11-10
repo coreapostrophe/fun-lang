@@ -1,6 +1,5 @@
 use crate::{
     errors::lexer_errors::LexerError,
-    source,
     token::{Span, Token, TokenType},
     token_lit_identifier, token_lit_number, token_lit_string,
 };
@@ -71,9 +70,9 @@ impl Lexer {
         }
 
         if !is_closed {
-            Err(LexerError::UnterminatedString(source!(
+            Err(LexerError::UnterminatedString(Span::new(
                 self.current_line_number,
-                self.start_index as u32
+                self.start_index as u32,
             )))
         } else {
             let literal_value = &self.unwrap_source()?[(self.start_index + 1)..self.crawled_index];
@@ -94,9 +93,9 @@ impl Lexer {
         let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
         let parsed_literal_value = match literal_value.parse::<f32>() {
             Ok(value) => Ok(value),
-            Err(_) => Err(LexerError::InvalidCharacterIndex(source!(
+            Err(_) => Err(LexerError::InvalidCharacterIndex(Span::new(
                 self.current_line_number,
-                self.start_index as u32
+                self.start_index as u32,
             ))),
         }?;
         Ok(token_lit_number!(parsed_literal_value))
