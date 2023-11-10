@@ -2,7 +2,8 @@ use funlang_derive::Expr;
 
 use crate::{
     errors::parser_errors::ParserError,
-    token::{Token, TokenType}, literal::LiteralData,
+    literal::LiteralData,
+    token::{Token, TokenType},
 };
 
 trait Evaluable<R> {
@@ -88,7 +89,6 @@ impl Evaluable<LiteralData> for UnaryExpr {
             TokenType::Bang => match right {
                 LiteralData::Null => Ok(LiteralData::Bool(true)),
                 LiteralData::Bool(bool) => Ok(LiteralData::Bool(!bool)),
-                LiteralData::Identifier(_) => Err(ParserError::NegatedIdentifier(span.clone())),
                 LiteralData::Number(number) => {
                     if number != 0.0 {
                         Ok(LiteralData::Bool(true))
@@ -108,7 +108,6 @@ impl Evaluable<LiteralData> for UnaryExpr {
                 LiteralData::Null => Ok(LiteralData::Bool(true)),
                 LiteralData::Number(number) => Ok(LiteralData::Number(-number)),
                 LiteralData::Bool(_) => Err(ParserError::NegatedBoolean(span.clone())),
-                LiteralData::Identifier(_) => Err(ParserError::NegatedIdentifier(span.clone())),
                 LiteralData::String(string) => match string.parse::<f32>() {
                     Ok(parsed_number) => Ok(LiteralData::Number(parsed_number)),
                     Err(_) => Err(ParserError::InvalidNumber(span.clone())),

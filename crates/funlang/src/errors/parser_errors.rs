@@ -10,7 +10,6 @@ pub enum ParserError {
     InvalidTokenIndex,
     InvalidNumber(Span),
     NegatedBoolean(Span),
-    NegatedIdentifier(Span),
     InvalidLiteralData(Span),
     UnterminatedGrouping(Span),
     UnexpectedExpression(Span),
@@ -55,9 +54,6 @@ impl Display for ParserError {
             }
             Self::InvalidUnaryOperator(span) => {
                 Self::format_error(self, Some(span), "invalid unary operator")
-            }
-            Self::NegatedIdentifier(span) => {
-                Self::format_error(self, Some(span), "attempted to negate an identifier")
             }
         };
         write!(f, "{}", error_message)

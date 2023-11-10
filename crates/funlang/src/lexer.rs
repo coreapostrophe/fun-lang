@@ -1,7 +1,7 @@
 use crate::{
     errors::lexer_errors::LexerError,
     token::{Span, Token, TokenType},
-    token_lit_identifier, token_lit_number, token_lit_string,
+    token_lit_number, token_lit_string,
 };
 
 #[derive(Debug)]
@@ -111,7 +111,7 @@ impl Lexer {
 
         let token = match parsed_keyword {
             Some(keyword) => Token::new(keyword),
-            None => token_lit_identifier!(literal_value.to_string()),
+            None => Token::new(TokenType::Identifier(literal_value.to_string())),
         };
 
         Ok(token)
@@ -379,7 +379,8 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus).set_span(Span::new(1, 0)),
-                    token_lit_identifier!("abcd1234".to_string()).set_span(Span::new(1, 1)),
+                    Token::new(TokenType::Identifier("abcd1234".to_string()))
+                        .set_span(Span::new(1, 1)),
                     Token::new(TokenType::Plus).set_span(Span::new(1, 9)),
                     Token::new(TokenType::EOF).set_span(Span::new(1, 10)),
                 ]
@@ -398,11 +399,11 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    token_lit_identifier!("h".to_string()).set_span(Span::new(1, 0)),
+                    Token::new(TokenType::Identifier("h".to_string())).set_span(Span::new(1, 0)),
                     Token::new(TokenType::Plus).set_span(Span::new(1, 1)),
                     Token::new(TokenType::And).set_span(Span::new(1, 2)),
                     Token::new(TokenType::Plus).set_span(Span::new(1, 5)),
-                    token_lit_identifier!("h".to_string()).set_span(Span::new(1, 6)),
+                    Token::new(TokenType::Identifier("h".to_string())).set_span(Span::new(1, 6)),
                     Token::new(TokenType::EOF).set_span(Span::new(1, 7)),
                 ]
             )
