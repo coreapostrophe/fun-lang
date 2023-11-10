@@ -52,6 +52,9 @@ impl Display for ParserError {
             Self::InvalidNumber(span) => {
                 Self::format_error(self, Some(span), "invalid number")
             }
+            Self::NegatedIdentifier(span) => {
+                Self::format_error(self, Some(span), "attempted to negate an identifier")
+            }
         };
         write!(f, "{}", error_message)
     }
