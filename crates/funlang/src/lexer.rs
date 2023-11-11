@@ -11,7 +11,7 @@ pub struct Lexer {
     pub source: Option<String>,
     start_index: usize,
     crawled_index: usize,
-    current_line_number: usize,
+    line_number: usize,
 }
 
 impl Lexer {
@@ -20,7 +20,7 @@ impl Lexer {
             source: None,
             start_index: 0,
             crawled_index: 0,
-            current_line_number: 1,
+            line_number: 1,
         }
     }
 
@@ -63,7 +63,7 @@ impl Lexer {
         'crawler: while !self.is_at_end()? {
             self.advance(1);
             if self.peek(0)? == '\n' {
-                self.current_line_number += 1;
+                self.line_number += 1;
             }
             if self.peek(0)? == '"' {
                 is_closed = true;
@@ -74,7 +74,7 @@ impl Lexer {
         if !is_closed {
             Err(LexerError::UnterminatedString(ErrorMeta::new(
                 Some(ErrorSpan::new(
-                    self.current_line_number,
+                    self.line_number,
                     self.start_index,
                     1,
                 )),
@@ -101,7 +101,7 @@ impl Lexer {
             Ok(value) => Ok(value),
             Err(_) => Err(LexerError::InvalidCharacterIndex(ErrorMeta::new(
                 Some(ErrorSpan::new(
-                    self.current_line_number,
+                    self.line_number,
                     self.start_index,
                     1,
                 )),
@@ -185,7 +185,7 @@ impl Lexer {
             '\r' => Ok(None),
             '\t' => Ok(None),
             '\n' => {
-                self.current_line_number += 1;
+                self.line_number += 1;
                 Ok(None)
             }
             '"' => Ok(Some(self.string()?)),
@@ -204,7 +204,7 @@ impl Lexer {
 
         match token {
             Some(token) => Ok(Some(token.set_span(Span::new(
-                self.current_line_number,
+                self.line_number,
                 self.start_index,
                 self.crawled_index - self.start_index,
             )))),
@@ -215,7 +215,7 @@ impl Lexer {
     fn clear_state(&mut self) {
         self.start_index = 0;
         self.crawled_index = 0;
-        self.current_line_number = 1;
+        self.line_number = 1;
     }
 
     pub fn tokenize(&mut self, source: &str) -> Result<Vec<Token>, LexerError> {
@@ -234,7 +234,7 @@ impl Lexer {
         }
 
         tokens.push(Token::new(TokenType::EOF).set_span(Span::new(
-            self.current_line_number,
+            self.line_number,
             self.start_index + 1,
             0,
         )));
