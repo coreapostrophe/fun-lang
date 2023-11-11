@@ -59,17 +59,12 @@ fn build_debug_arms(data: &Data) -> Vec<TokenStream> {
             for variant in variants.iter() {
                 let variant_identifier = &variant.ident;
                 let stringified_identifier = variant_identifier.to_string();
-                let has_discriminant = match variant.fields {
-                    Fields::Unnamed(_) => true,
-                    Fields::Named(_) => false,
-                    Fields::Unit => false,
-                };
-                let discriminant_initiator = if has_discriminant {
-                    quote!((_))
-                } else {
-                    quote!()
-                };
-                match_arms.push(quote!(Self::#variant_identifier #discriminant_initiator  => #stringified_identifier.to_string(),));
+                let discriminant_initiator =
+                    discriminant_switch(&variant.fields, quote!((_)), quote!());
+                let match_arm = quote!(
+                    Self::#variant_identifier #discriminant_initiator  => #stringified_identifier.to_string(),
+                );
+                match_arms.push(match_arm);
             }
         }
         Data::Struct(_) => (),
@@ -106,23 +101,22 @@ fn build_display_arm(variant: &Variant) -> TokenStream {
         },
         _ => quote!(),
     };
-    let has_discriminant = match variant.fields {
-        Fields::Unnamed(_) => true,
-        Fields::Named(_) => false,
-        Fields::Unit => false,
-    };
-    let discriminant_initiator = if has_discriminant {
-        quote!((meta))
-    } else {
-        quote!()
-    };
-    let discriminant_argument = if has_discriminant {
-        quote!(Some(&meta),)
-    } else {
-        quote!(None,)
-    };
-
+    let discriminant_initiator = discriminant_switch(&variant.fields, quote!((meta)), quote!());
+    let discriminant_argument =
+        discriminant_switch(&variant.fields, quote!(Some(&meta),), quote!(None,));
     quote!(Self::#identifier #discriminant_initiator => self.format_error(#discriminant_argument #error_message),)
+}
+
+fn discriminant_switch(
+    fields: &Fields,
+    true_value: TokenStream,
+    false_value: TokenStream,
+) -> TokenStream {
+    match fields {
+        Fields::Unnamed(_) => true_value,
+        Fields::Named(_) => false_value,
+        Fields::Unit => false_value,
+    }
 }
 
 fn add_trait_bounds(mut generics: Generics) -> Generics {
