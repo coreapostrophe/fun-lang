@@ -3,15 +3,15 @@ use quote::{quote, quote_spanned};
 use syn::{Attribute, Data, DeriveInput, Expr, Meta, Variant};
 
 pub fn generate_expr(input: DeriveInput) -> TokenStream {
-    let data = &input.data;
+    let data = input.data;
     let generated_struct = handle_data(data);
     quote!(#generated_struct)
 }
 
-pub fn handle_data(data: &Data) -> Option<TokenStream> {
+pub fn handle_data(data: Data) -> Option<TokenStream> {
     match data {
         Data::Enum(data_enum) => {
-            let variants = &data_enum.variants;
+            let variants = data_enum.variants;
             let struct_definitions = variants.iter().map(|variant| build_struct(variant));
             Some(quote!(#(#struct_definitions)*))
         }

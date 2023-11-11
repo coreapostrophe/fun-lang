@@ -12,6 +12,7 @@ proc_macro = true
 trybuild = { version = "1.0.85", features = ["diff"] }
 
 [dependencies]
+funlang_error = { path = '../funlang_error' }
 proc-macro2 = "1"
 syn = { version = "2.0.39", features = ["full"] }
 quote = "1.0"

@@ -1,5 +1,6 @@
 use std::error::Error;
 
+#[derive(Debug)]
 pub struct Span {
     pub line: usize,
     pub col: usize,
@@ -12,7 +13,8 @@ impl Span {
     }
 }
 
+#[derive(Debug)]
 pub struct ErrorMeta {
-    pub span: Span,
+    pub span: Option<Span>,
     pub error: Option<Box<dyn Error>>,
 }

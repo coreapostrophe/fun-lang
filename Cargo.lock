@@ -28,6 +28,7 @@ dependencies = [
 name = "funlang_derive"
 version = "0.1.0"
 dependencies = [
+ "funlang_error",
  "proc-macro2",
  "quote",
  "syn",
