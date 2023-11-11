@@ -1,13 +1,13 @@
 use std::error::Error;
 
 #[derive(Debug)]
-pub struct Span {
+pub struct ErrorSpan {
     pub line: usize,
     pub col: usize,
     pub len: usize,
 }
 
-impl Span {
+impl ErrorSpan {
     pub fn new(line: usize, col: usize, len: usize) -> Self {
         Self { line, col, len }
     }
@@ -15,6 +15,15 @@ impl Span {
 
 #[derive(Debug)]
 pub struct ErrorMeta {
-    pub span: Option<Span>,
-    pub error: Option<Box<dyn Error>>,
+    pub span: Option<ErrorSpan>,
+    pub embedded_error: Option<Box<dyn Error>>,
+}
+
+impl ErrorMeta {
+    pub fn new(span: Option<ErrorSpan>, embedded_error: Option<Box<dyn Error>>) -> Self {
+        Self {
+            span,
+            embedded_error,
+        }
+    }
 }

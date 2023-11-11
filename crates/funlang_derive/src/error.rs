@@ -15,11 +15,11 @@ pub fn generate_error(input: DeriveInput) -> TokenStream {
             fn format_error(&self, meta: Option<&funlang_error::ErrorMeta>, message: &str) -> String {
                 match &meta {
                     Some(meta) => match &meta.span {
-                        Some(span) => match &meta.error {
+                        Some(span) => match &meta.embedded_error {
                             Some(error) => error.to_string(),
                             None => std::format!("[line {}:{} - {:?}] {}", span.line, span.col, &self, message)
                         },
-                        None => match &meta.error {
+                        None => match &meta.embedded_error {
                             Some(error) => std::format!("[{:?}] {}", &error, message),
                             None => std::format!("[{:?}] {}", &self, message)
                         },

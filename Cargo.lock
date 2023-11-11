@@ -22,6 +22,7 @@ name = "funlang"
 version = "0.1.0"
 dependencies = [
  "funlang_derive",
+ "funlang_error",
 ]
 
 [[package]]

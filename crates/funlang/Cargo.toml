@@ -6,4 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+funlang_error = { path = '../funlang_error' }
 funlang_derive = { path = "../funlang_derive" }

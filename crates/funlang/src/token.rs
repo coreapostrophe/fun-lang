@@ -81,13 +81,14 @@ impl Display for TokenType {
 
 #[derive(Debug, Clone)]
 pub struct Span {
-    pub line: u32,
-    pub col: u32,
+    pub line: usize,
+    pub col: usize,
+    pub len: usize,
 }
 
 impl Span {
-    pub fn new(line: u32, col: u32) -> Self {
-        Self { line, col }
+    pub fn new(line: usize, col: usize, len: usize) -> Self {
+        Self { line, col, len }
     }
 }
 
