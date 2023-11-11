@@ -13,3 +13,13 @@ macro_rules! token_lit_string {
             .set_literal_data(crate::literal::LiteralData::String($value))
     };
 }
+
+#[macro_export]
+macro_rules! parse_string_to_num {
+    ($value:expr, $error:expr) => {
+        match $value.parse::<f32>() {
+            Ok(parsed_value) => Ok(parsed_value),
+            Err(_) => Err($error),
+        }
+    };
+}
