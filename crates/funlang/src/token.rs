@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use funlang_error::ErrorSpan;
+
 use crate::literal::LiteralData;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -89,6 +91,16 @@ pub struct Span {
 impl Span {
     pub fn new(line: usize, col: usize, len: usize) -> Self {
         Self { line, col, len }
+    }
+}
+
+impl From<Span> for ErrorSpan {
+    fn from(value: Span) -> Self {
+        ErrorSpan {
+            line: value.line,
+            col: value.col,
+            len: value.len,
+        }
     }
 }
 

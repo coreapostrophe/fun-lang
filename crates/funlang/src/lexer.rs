@@ -1,7 +1,7 @@
 use funlang_error::{ErrorMeta, ErrorSpan};
 
 use crate::{
-    errors::lexer_errors::LexerError,
+    errors::LexerError,
     token::{Span, Token, TokenType},
     token_lit_number, token_lit_string,
 };

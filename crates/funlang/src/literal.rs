@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::{errors::operation_error::OperationError, parse_string_to_num};
+use crate::{errors::OperationError, parse_string_to_num};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum LiteralData {

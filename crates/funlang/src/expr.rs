@@ -1,7 +1,8 @@
 use funlang_derive::Expr;
+use funlang_error::ErrorMeta;
 
 use crate::{
-    errors::parser_errors::ParserError,
+    errors::ParserError,
     literal::LiteralData,
     token::{Token, TokenType},
 };
@@ -107,13 +108,22 @@ impl Evaluable<LiteralData> for UnaryExpr {
             TokenType::Minus => match right {
                 LiteralData::Null => Ok(LiteralData::Bool(true)),
                 LiteralData::Number(number) => Ok(LiteralData::Number(-number)),
-                LiteralData::Bool(_) => Err(ParserError::NegatedBoolean(span.clone())),
+                LiteralData::Bool(_) => Err(ParserError::NegatedBoolean(ErrorMeta::new(
+                    Some(span.clone().into()),
+                    None,
+                ))),
                 LiteralData::String(string) => match string.parse::<f32>() {
                     Ok(parsed_number) => Ok(LiteralData::Number(parsed_number)),
-                    Err(_) => Err(ParserError::InvalidNumber(span.clone())),
+                    Err(_) => Err(ParserError::InvalidNumber(ErrorMeta::new(
+                        Some(span.clone().into()),
+                        None,
+                    ))),
                 },
             },
-            _ => Err(ParserError::InvalidUnaryOperator(span.clone())),
+            _ => Err(ParserError::InvalidUnaryOperator(ErrorMeta::new(
+                Some(span.clone().into()),
+                None,
+            ))),
         }
     }
 }

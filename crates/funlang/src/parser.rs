@@ -1,7 +1,10 @@
+use funlang_error::ErrorMeta;
+
 use crate::{
-    errors::parser_errors::ParserError,
+    errors::ParserError,
     expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
-    token::{Token, TokenType}, literal::LiteralData,
+    literal::LiteralData,
+    token::{Token, TokenType},
 };
 
 pub struct Parser {
@@ -114,19 +117,25 @@ impl Parser {
                 literal: self
                     .previous()?
                     .literal_data
-                    .ok_or(ParserError::InvalidLiteralData(span))?,
+                    .ok_or(ParserError::InvalidLiteralData(ErrorMeta::new(
+                        Some(span.into()),
+                        None,
+                    )))?,
             })))
         } else if self.r#match(vec![TokenType::LeftParen])? {
             let expr = self.expression()?;
             let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
             self.consume(
                 TokenType::RightParen,
-                ParserError::UnterminatedGrouping(span),
+                ParserError::UnterminatedGrouping(ErrorMeta::new(Some(span.into()), None)),
             )?;
             Ok(Expr::Grouping(Box::new(GroupingExpr { expression: expr })))
         } else {
             let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
-            Err(ParserError::UnexpectedExpression(span))
+            Err(ParserError::UnexpectedExpression(ErrorMeta::new(
+                Some(span.into()),
+                None,
+            )))
         }
     }
 
