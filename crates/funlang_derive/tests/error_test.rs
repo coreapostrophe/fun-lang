@@ -3,9 +3,14 @@ use funlang_error::ErrorMeta;
 #[derive(funlang_derive::Error)]
 enum ParserError {
     #[message = "source is missing"]
-    _MissingSource,
+    MissingSource,
     #[message = "number is invalid"]
-    _InvalidNumber(ErrorMeta),
+    InvalidNumber(ErrorMeta),
 }
 
-fn main() {}
+fn main() {
+    let _error = ParserError::InvalidNumber(ErrorMeta {
+        span: None,
+        embedded_error: Some(Box::new(ParserError::MissingSource)),
+    });
+}

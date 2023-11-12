@@ -56,9 +56,13 @@ impl Evaluable<LiteralData> for BinaryExpr {
         let operator = &self.operator.token_type;
 
         match operator {
-            TokenType::Plus => {
-                todo!()
-            }
+            TokenType::Plus => match _left + _right {
+                Ok(literal_value) => Ok(literal_value),
+                Err(embedded_error) => Err(ParserError::AdditionException(ErrorMeta {
+                    span: None,
+                    embedded_error: Some(Box::new(embedded_error)),
+                })),
+            },
             TokenType::Minus => {
                 todo!()
             }

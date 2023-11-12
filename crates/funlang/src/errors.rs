@@ -48,4 +48,12 @@ pub enum ParserError {
     InvalidUnaryOperator(ErrorMeta),
     #[message = "invalid binary operator"]
     InvalidBinaryOperator(ErrorMeta),
+    #[message = "something went wrong during addition"]
+    AdditionException(ErrorMeta),
+    #[message = "something went wrong during subtraction"]
+    SubtractionException(ErrorMeta),
+    #[message = "something went wrong during division"]
+    DivisionException(ErrorMeta),
+    #[message = "something went wrong during multiplication"]
+    MultiplicationException(ErrorMeta),
 }
