@@ -1,6 +1,7 @@
-use funlang_error::ErrorMeta;
+use funlang_error::ErrorCascade;
 
 use crate::{
+    error,
     errors::ParserError,
     expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
     literal::LiteralData,
@@ -20,11 +21,13 @@ impl Parser {
         }
     }
 
-    fn unwrap_tokens(&self) -> Result<&Vec<Token>, ParserError> {
-        self.tokens.as_ref().ok_or(ParserError::MissingTokens)
+    fn unwrap_tokens(&self) -> Result<&Vec<Token>, ErrorCascade<ParserError>> {
+        self.tokens
+            .as_ref()
+            .ok_or(error!(ParserError::MissingTokens))
     }
 
-    fn _synchronize(&mut self) -> Result<(), ParserError> {
+    fn _synchronize(&mut self) -> Result<(), ErrorCascade<ParserError>> {
         if self.previous()?.token_type == TokenType::Semicolon {
             return Ok(());
         }
@@ -43,11 +46,15 @@ impl Parser {
         }
     }
 
-    fn is_at_end(&self) -> Result<bool, ParserError> {
+    fn is_at_end(&self) -> Result<bool, ErrorCascade<ParserError>> {
         Ok(self.peek()?.token_type == TokenType::EOF)
     }
 
-    fn consume(&mut self, token_type: TokenType, error: ParserError) -> Result<(), ParserError> {
+    fn consume(
+        &mut self,
+        token_type: TokenType,
+        error: ErrorCascade<ParserError>,
+    ) -> Result<(), ErrorCascade<ParserError>> {
         if self.check(&token_type)? {
             self.advance()?;
             Ok(())
@@ -56,28 +63,28 @@ impl Parser {
         }
     }
 
-    fn previous(&self) -> Result<Token, ParserError> {
+    fn previous(&self) -> Result<Token, ErrorCascade<ParserError>> {
         match self.unwrap_tokens()?.get(self.crawled_index - 1) {
             Some(token) => Ok(token.clone()),
-            None => Err(ParserError::InvalidTokenIndex),
+            None => Err(error!(ParserError::InvalidTokenIndex)),
         }
     }
 
-    fn peek(&self) -> Result<Token, ParserError> {
+    fn peek(&self) -> Result<Token, ErrorCascade<ParserError>> {
         match self.unwrap_tokens()?.get(self.crawled_index) {
             Some(token) => Ok(token.clone()),
-            None => Err(ParserError::InvalidTokenIndex),
+            None => Err(error!(ParserError::InvalidTokenIndex)),
         }
     }
 
-    fn advance(&mut self) -> Result<(), ParserError> {
+    fn advance(&mut self) -> Result<(), ErrorCascade<ParserError>> {
         if !self.is_at_end()? {
             self.crawled_index += 1;
         }
         Ok(())
     }
 
-    fn check(&self, token_type: &TokenType) -> Result<bool, ParserError> {
+    fn check(&self, token_type: &TokenType) -> Result<bool, ErrorCascade<ParserError>> {
         if self.is_at_end()? {
             Ok(false)
         } else {
@@ -85,7 +92,7 @@ impl Parser {
         }
     }
 
-    fn r#match(&mut self, token_types: Vec<TokenType>) -> Result<bool, ParserError> {
+    fn r#match(&mut self, token_types: Vec<TokenType>) -> Result<bool, ErrorCascade<ParserError>> {
         let mut result = false;
 
         for token_type in token_types {
@@ -98,7 +105,7 @@ impl Parser {
         Ok(result)
     }
 
-    fn primary(&mut self) -> Result<Expr, ParserError> {
+    fn primary(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         if self.r#match(vec![TokenType::False])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
                 literal: LiteralData::Bool(false),
@@ -112,34 +119,28 @@ impl Parser {
                 literal: LiteralData::Null,
             })))
         } else if self.r#match(vec![TokenType::Number, TokenType::String])? {
-            let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
+            let span = self.peek()?.span.ok_or(error!(ParserError::MissingSpan))?;
             Ok(Expr::Literal(Box::new(LiteralExpr {
                 literal: self
                     .previous()?
                     .literal_data
-                    .ok_or(ParserError::InvalidLiteralData(ErrorMeta::new(
-                        Some(span.into()),
-                        None,
-                    )))?,
+                    .ok_or(error!(ParserError::InvalidLiteralData).set_span(span.into()))?,
             })))
         } else if self.r#match(vec![TokenType::LeftParen])? {
             let expr = self.expression()?;
-            let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
+            let span = self.peek()?.span.ok_or(error!(ParserError::MissingSpan))?;
             self.consume(
                 TokenType::RightParen,
-                ParserError::UnterminatedGrouping(ErrorMeta::new(Some(span.into()), None)),
+                error!(ParserError::UnterminatedGrouping).set_span(span.into()),
             )?;
             Ok(Expr::Grouping(Box::new(GroupingExpr { expression: expr })))
         } else {
-            let span = self.peek()?.span.ok_or(ParserError::MissingSpan)?;
-            Err(ParserError::UnexpectedExpression(ErrorMeta::new(
-                Some(span.into()),
-                None,
-            )))
+            let span = self.peek()?.span.ok_or(error!(ParserError::MissingSpan))?;
+            Err(error!(ParserError::UnexpectedExpression).set_span(span.into()))
         }
     }
 
-    fn unary(&mut self) -> Result<Expr, ParserError> {
+    fn unary(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         if self.r#match(vec![TokenType::Bang, TokenType::Minus])? {
             let operator = self.previous()?;
             let right = self.unary()?;
@@ -149,7 +150,7 @@ impl Parser {
         }
     }
 
-    fn factor(&mut self) -> Result<Expr, ParserError> {
+    fn factor(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         let mut expr = self.unary()?;
 
         while self.r#match(vec![TokenType::Slash, TokenType::Star])? {
@@ -165,7 +166,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn term(&mut self) -> Result<Expr, ParserError> {
+    fn term(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         let mut expr = self.factor()?;
 
         while self.r#match(vec![TokenType::Minus, TokenType::Plus])? {
@@ -181,7 +182,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn comparison(&mut self) -> Result<Expr, ParserError> {
+    fn comparison(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         let mut expr = self.term()?;
 
         while self.r#match(vec![
@@ -202,7 +203,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn equality(&mut self) -> Result<Expr, ParserError> {
+    fn equality(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         let mut expr: Expr = self.comparison()?;
 
         while self.r#match(vec![TokenType::BangEqual, TokenType::EqualEqual])? {
@@ -218,7 +219,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn expression(&mut self) -> Result<Expr, ParserError> {
+    fn expression(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         Ok(self.equality()?)
     }
 
@@ -226,7 +227,7 @@ impl Parser {
         self.crawled_index = 0;
     }
 
-    pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Expr, ParserError> {
+    pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Expr, ErrorCascade<ParserError>> {
         self.clear_state();
         self.tokens = Some(tokens);
 

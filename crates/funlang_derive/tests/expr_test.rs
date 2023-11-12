@@ -5,8 +5,10 @@ enum Expr {
 }
 
 fn main() {
-    let _expr = Expr::Grouped(Box::new(GroupedExpr {
+    let expr = Expr::Grouped(Box::new(GroupedExpr {
         left: "mock_left".to_string(),
         right: "mock_right".to_string(),
     }));
+
+    println!("{:?}", expr);
 }

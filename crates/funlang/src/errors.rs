@@ -1,6 +1,4 @@
 use funlang_derive::Error;
-use funlang_error::ErrorMeta;
-
 
 #[derive(Error)]
 pub enum LexerError {
@@ -9,11 +7,11 @@ pub enum LexerError {
     #[message = "unexpected character"]
     UnexpectedCharacter,
     #[message = "character being indexed is out of bounds"]
-    InvalidCharacterIndex(ErrorMeta),
+    InvalidCharacterIndex,
     #[message = "string was not closed"]
-    UnterminatedString(ErrorMeta),
+    UnterminatedString,
     #[message = "invalid number"]
-    InvalidNumber(ErrorMeta),
+    InvalidNumber,
 }
 
 #[derive(Error)]
@@ -35,25 +33,25 @@ pub enum ParserError {
     #[message = "token being indexed is out of bounds"]
     InvalidTokenIndex,
     #[message = "invalid number"]
-    InvalidNumber(ErrorMeta),
+    InvalidNumber,
     #[message = "attempted to negate a boolean"]
-    NegatedBoolean(ErrorMeta),
+    NegatedBoolean,
     #[message = "invalid data"]
-    InvalidLiteralData(ErrorMeta),
+    InvalidLiteralData,
     #[message = "grouping symbol was not closed"]
-    UnterminatedGrouping(ErrorMeta),
+    UnterminatedGrouping,
     #[message = "unexpected expression"]
-    UnexpectedExpression(ErrorMeta),
+    UnexpectedExpression,
     #[message = "invalid unary operator"]
-    InvalidUnaryOperator(ErrorMeta),
+    InvalidUnaryOperator,
     #[message = "invalid binary operator"]
-    InvalidBinaryOperator(ErrorMeta),
+    InvalidBinaryOperator,
     #[message = "something went wrong during addition"]
-    AdditionException(ErrorMeta),
+    AdditionException,
     #[message = "something went wrong during subtraction"]
-    SubtractionException(ErrorMeta),
+    SubtractionException,
     #[message = "something went wrong during division"]
-    DivisionException(ErrorMeta),
+    DivisionException,
     #[message = "something went wrong during multiplication"]
-    MultiplicationException(ErrorMeta),
+    MultiplicationException,
 }

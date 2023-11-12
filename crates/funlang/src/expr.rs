@@ -1,14 +1,15 @@
 use funlang_derive::Expr;
-use funlang_error::ErrorMeta;
+use funlang_error::ErrorCascade;
 
 use crate::{
+    error,
     errors::ParserError,
     literal::LiteralData,
     token::{Token, TokenType},
 };
 
 trait Evaluable<R> {
-    fn evaluate(&self) -> Result<R, ParserError>;
+    fn evaluate(&self) -> Result<R, ErrorCascade<ParserError>>;
 }
 
 #[derive(Expr, Debug, Clone)]
@@ -27,7 +28,7 @@ pub enum Expr {
 }
 
 impl Evaluable<LiteralData> for Expr {
-    fn evaluate(&self) -> Result<LiteralData, ParserError> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
         match self {
             Expr::Unary(unary_expr) => unary_expr.evaluate(),
             Expr::Binary(binary_expr) => binary_expr.evaluate(),
@@ -38,19 +39,19 @@ impl Evaluable<LiteralData> for Expr {
 }
 
 impl Evaluable<LiteralData> for LiteralExpr {
-    fn evaluate(&self) -> Result<LiteralData, ParserError> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
         Ok(self.literal.clone())
     }
 }
 
 impl Evaluable<LiteralData> for GroupingExpr {
-    fn evaluate(&self) -> Result<LiteralData, ParserError> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
         self.expression.evaluate()
     }
 }
 
 impl Evaluable<LiteralData> for BinaryExpr {
-    fn evaluate(&self) -> Result<LiteralData, ParserError> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
         let _left = self.left.evaluate()?;
         let _right = self.right.evaluate()?;
         let operator = &self.operator.token_type;
@@ -58,10 +59,8 @@ impl Evaluable<LiteralData> for BinaryExpr {
         match operator {
             TokenType::Plus => match _left + _right {
                 Ok(literal_value) => Ok(literal_value),
-                Err(embedded_error) => Err(ParserError::AdditionException(ErrorMeta {
-                    span: None,
-                    embedded_error: Some(Box::new(embedded_error)),
-                })),
+                Err(embedded_error) => Err(error!(ParserError::AdditionException)
+                    .set_embedded_error(Box::new(embedded_error))),
             },
             TokenType::Minus => {
                 todo!()
@@ -80,13 +79,13 @@ impl Evaluable<LiteralData> for BinaryExpr {
 }
 
 impl Evaluable<LiteralData> for UnaryExpr {
-    fn evaluate(&self) -> Result<LiteralData, ParserError> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
         let right = self.right.evaluate()?;
         let span = self
             .operator
             .span
             .as_ref()
-            .ok_or(ParserError::MissingSpan)?
+            .ok_or(error!(ParserError::MissingSpan))?
             .clone();
         let operator = &self.operator.token_type;
 
@@ -112,22 +111,15 @@ impl Evaluable<LiteralData> for UnaryExpr {
             TokenType::Minus => match right {
                 LiteralData::Null => Ok(LiteralData::Bool(true)),
                 LiteralData::Number(number) => Ok(LiteralData::Number(-number)),
-                LiteralData::Bool(_) => Err(ParserError::NegatedBoolean(ErrorMeta::new(
-                    Some(span.clone().into()),
-                    None,
-                ))),
+                LiteralData::Bool(_) => {
+                    Err(error!(ParserError::NegatedBoolean).set_span(span.into()))
+                }
                 LiteralData::String(string) => match string.parse::<f32>() {
                     Ok(parsed_number) => Ok(LiteralData::Number(parsed_number)),
-                    Err(_) => Err(ParserError::InvalidNumber(ErrorMeta::new(
-                        Some(span.clone().into()),
-                        None,
-                    ))),
+                    Err(_) => Err(error!(ParserError::InvalidNumber).set_span(span.into())),
                 },
             },
-            _ => Err(ParserError::InvalidUnaryOperator(ErrorMeta::new(
-                Some(span.clone().into()),
-                None,
-            ))),
+            _ => Err(error!(ParserError::InvalidUnaryOperator).set_span(span.into())),
         }
     }
 }

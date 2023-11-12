@@ -11,24 +11,6 @@ pub fn generate_error(input: DeriveInput) -> TokenStream {
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
 
     quote!(
-        impl #impl_generics #identifier #type_generics #where_clause {
-            fn format_error(&self, meta: Option<&funlang_error::ErrorMeta>, message: &str) -> String {
-                match &meta {
-                    Some(meta) => match &meta.span {
-                        Some(span) => match &meta.embedded_error {
-                            Some(error) => error.to_string(),
-                            None => std::format!("[line {}:{} - {:?}] {}", span.line, span.col, &self, message)
-                        },
-                        None => match &meta.embedded_error {
-                            Some(error) => std::format!("[{:?}] {}", &error, message),
-                            None => std::format!("[{:?}] {}", &self, message)
-                        },
-                    }
-                    None => std::format!("[{:?}] {}", &self, message)
-                }
-            }
-        }
-
         impl #impl_generics std::fmt::Debug for #identifier #type_generics #where_clause {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 let error_message: String = match self {
@@ -47,7 +29,7 @@ pub fn generate_error(input: DeriveInput) -> TokenStream {
             }
         }
 
-        impl #impl_generics std::error::Error for #identifier #type_generics #where_clause {}
+        impl #impl_generics funlang_error::ErrorType for #identifier #type_generics #where_clause {}
     )
 }
 
@@ -101,10 +83,8 @@ fn build_display_arm(variant: &Variant) -> TokenStream {
         },
         _ => quote!(),
     };
-    let discriminant_initiator = discriminant_switch(&variant.fields, quote!((meta)), quote!());
-    let discriminant_argument =
-        discriminant_switch(&variant.fields, quote!(Some(&meta),), quote!(None,));
-    quote!(Self::#identifier #discriminant_initiator => self.format_error(#discriminant_argument #error_message),)
+    let discriminant_initiator = discriminant_switch(&variant.fields, quote!((_)), quote!());
+    quote!(Self::#identifier #discriminant_initiator => #error_message.to_string(),)
 }
 
 fn discriminant_switch(

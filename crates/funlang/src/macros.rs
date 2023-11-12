@@ -23,3 +23,10 @@ macro_rules! parse_string_to_num {
         }
     };
 }
+
+#[macro_export]
+macro_rules! error {
+    ($error_type:expr) => {
+        funlang_error::ErrorCascade::new($error_type)
+    };
+}

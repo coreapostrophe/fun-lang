@@ -1,6 +1,7 @@
-use funlang_error::{ErrorMeta, ErrorSpan};
+use funlang_error::{ErrorCascade, ErrorSpan};
 
 use crate::{
+    error,
     errors::LexerError,
     token::{Span, Token, TokenType},
     token_lit_number, token_lit_string,
@@ -24,11 +25,13 @@ impl Lexer {
         }
     }
 
-    fn unwrap_source(&self) -> Result<&String, LexerError> {
-        self.source.as_ref().ok_or(LexerError::MissingSource)
+    fn unwrap_source(&self) -> Result<&String, ErrorCascade<LexerError>> {
+        self.source
+            .as_ref()
+            .ok_or(error!(LexerError::MissingSource))
     }
 
-    fn is_at_end(&self) -> Result<bool, LexerError> {
+    fn is_at_end(&self) -> Result<bool, ErrorCascade<LexerError>> {
         Ok(self.crawled_index >= self.unwrap_source()?.len())
     }
 
@@ -36,7 +39,7 @@ impl Lexer {
         self.crawled_index += value;
     }
 
-    fn peek(&mut self, lookahead_offset: usize) -> Result<char, LexerError> {
+    fn peek(&mut self, lookahead_offset: usize) -> Result<char, ErrorCascade<LexerError>> {
         match self
             .unwrap_source()?
             .chars()
@@ -47,7 +50,7 @@ impl Lexer {
         }
     }
 
-    fn match_next(&mut self, expected: char) -> Result<bool, LexerError> {
+    fn match_next(&mut self, expected: char) -> Result<bool, ErrorCascade<LexerError>> {
         let is_match = match self.unwrap_source()?.chars().nth(self.crawled_index + 1) {
             Some(next_char) => next_char == expected,
             None => false,
@@ -58,7 +61,7 @@ impl Lexer {
         Ok(is_match)
     }
 
-    fn string(&mut self) -> Result<Token, LexerError> {
+    fn string(&mut self) -> Result<Token, ErrorCascade<LexerError>> {
         let mut is_closed = false;
         'crawler: while !self.is_at_end()? {
             self.advance(1);
@@ -72,21 +75,20 @@ impl Lexer {
         }
 
         if !is_closed {
-            Err(LexerError::UnterminatedString(ErrorMeta::new(
-                Some(ErrorSpan::new(
+            Err(
+                error!(LexerError::UnterminatedString).set_span(ErrorSpan::new(
                     self.line_number,
                     self.start_index,
                     1,
                 )),
-                None,
-            )))
+            )
         } else {
             let literal_value = &self.unwrap_source()?[(self.start_index + 1)..self.crawled_index];
             Ok(token_lit_string!(literal_value.to_string()))
         }
     }
 
-    fn number(&mut self) -> Result<Token, LexerError> {
+    fn number(&mut self) -> Result<Token, ErrorCascade<LexerError>> {
         while self.peek(1)?.is_digit(10) {
             self.advance(1);
         }
@@ -99,19 +101,18 @@ impl Lexer {
         let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
         let parsed_literal_value = match literal_value.parse::<f32>() {
             Ok(value) => Ok(value),
-            Err(_) => Err(LexerError::InvalidCharacterIndex(ErrorMeta::new(
-                Some(ErrorSpan::new(
+            Err(_) => Err(
+                error!(LexerError::InvalidCharacterIndex).set_span(ErrorSpan::new(
                     self.line_number,
                     self.start_index,
                     1,
                 )),
-                None,
-            ))),
+            ),
         }?;
         Ok(token_lit_number!(parsed_literal_value))
     }
 
-    fn identifier(&mut self) -> Result<Token, LexerError> {
+    fn identifier(&mut self) -> Result<Token, ErrorCascade<LexerError>> {
         while self.peek(1)?.is_alphanumeric() {
             self.advance(1);
         }
@@ -127,7 +128,7 @@ impl Lexer {
         Ok(token)
     }
 
-    fn identify_token(&mut self) -> Result<Option<Token>, LexerError> {
+    fn identify_token(&mut self) -> Result<Option<Token>, ErrorCascade<LexerError>> {
         let c = self.peek(0)?;
 
         let token = match c {
@@ -195,7 +196,7 @@ impl Lexer {
                 } else if c.is_alphabetic() {
                     Ok(Some(self.identifier()?))
                 } else {
-                    Err(LexerError::UnexpectedCharacter)
+                    Err(error!(LexerError::UnexpectedCharacter))
                 }
             }
         }?;
@@ -218,7 +219,7 @@ impl Lexer {
         self.line_number = 1;
     }
 
-    pub fn tokenize(&mut self, source: &str) -> Result<Vec<Token>, LexerError> {
+    pub fn tokenize(&mut self, source: &str) -> Result<Vec<Token>, ErrorCascade<LexerError>> {
         self.clear_state();
         self.source = Some(source.to_string());
 
