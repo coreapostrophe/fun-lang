@@ -18,10 +18,14 @@ pub enum LexerError {
 pub enum OperationError {
     #[message = "invalid number"]
     InvalidNumber,
-    #[message = "attempted to add booleans"]
-    InvalidBooleanAddition,
-    #[message = "attempted to add identifiers"]
-    InvalidIdentifierAddition,
+    #[message = "boolean operations are not allowed"]
+    InvalidBooleanOperation,
+    #[message = "attempted to subtract strings"]
+    InvalidStringOperation,
+    #[message = "attempted to perform null operations"]
+    InvalidNullOperation,
+    #[message = "string can't be parsed to a valid number"]
+    InvalidParsedNumber,
 }
 
 #[derive(Error)]

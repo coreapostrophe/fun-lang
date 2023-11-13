@@ -99,16 +99,11 @@ impl Lexer {
             }
         }
         let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
-        let parsed_literal_value = match literal_value.parse::<f32>() {
-            Ok(value) => Ok(value),
-            Err(_) => Err(
-                error!(LexerError::InvalidCharacterIndex).set_span(ErrorSpan::new(
-                    self.line_number,
-                    self.start_index,
-                    1,
-                )),
-            ),
-        }?;
+        let parsed_literal_value = literal_value
+            .parse::<f32>()
+            .or(Err(error!(LexerError::InvalidCharacterIndex).set_span(
+                ErrorSpan::new(self.line_number, self.start_index, 1),
+            )))?;
         Ok(token_lit_number!(parsed_literal_value))
     }
 

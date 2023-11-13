@@ -52,28 +52,32 @@ impl Evaluable<LiteralData> for GroupingExpr {
 
 impl Evaluable<LiteralData> for BinaryExpr {
     fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
-        let _left = self.left.evaluate()?;
-        let _right = self.right.evaluate()?;
+        let left = self.left.evaluate()?;
+        let right = self.right.evaluate()?;
         let operator = &self.operator.token_type;
 
         match operator {
-            TokenType::Plus => match _left + _right {
+            TokenType::Plus => match left + right {
                 Ok(literal_value) => Ok(literal_value),
                 Err(embedded_error) => Err(error!(ParserError::AdditionException)
                     .set_embedded_error(Box::new(embedded_error))),
             },
-            TokenType::Minus => {
-                todo!()
+            TokenType::Minus => match left - right {
+                Ok(literal_value) => Ok(literal_value),
+                Err(embedded_error) => Err(error!(ParserError::SubtractionException)
+                    .set_embedded_error(Box::new(embedded_error))),
+            },
+            TokenType::Star => match left * right {
+                Ok(literal_value) => Ok(literal_value),
+                Err(embedded_error) => Err(error!(ParserError::MultiplicationException)
+                    .set_embedded_error(Box::new(embedded_error))),
+            },
+            TokenType::Slash => match left / right {
+                Ok(literal_value) => Ok(literal_value),
+                Err(embedded_error) => Err(error!(ParserError::DivisionException)
+                    .set_embedded_error(Box::new(embedded_error))),
             }
-            TokenType::Star => {
-                todo!()
-            }
-            TokenType::Slash => {
-                todo!()
-            }
-            _ => {
-                todo!()
-            }
+            _ => Err(error!(ParserError::InvalidBinaryOperator)),
         }
     }
 }
