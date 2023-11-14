@@ -1,6 +1,20 @@
 use funlang_derive::Error;
 
 #[derive(Error)]
+pub enum OperationError {
+    #[message = "boolean operations are invalid"]
+    InvalidBooleanOperation,
+    #[message = "string subtraction is invalid"]
+    InvalidStringSubtraction,
+    #[message = "null subtraction is invalid"]
+    InvalidNullSubtraction,
+    #[message = "null multiplication is invalid"]
+    InvalidNullMultiplication,
+    #[message = "parsed string number is invalid"]
+    InvalidParsedNumber,
+}
+
+#[derive(Error)]
 pub enum LexerError {
     #[message = "lexer does not have a source"]
     MissingSource,
@@ -12,20 +26,6 @@ pub enum LexerError {
     UnterminatedString,
     #[message = "invalid number"]
     InvalidNumber,
-}
-
-#[derive(Error)]
-pub enum OperationError {
-    #[message = "invalid number"]
-    InvalidNumber,
-    #[message = "boolean operations are not allowed"]
-    InvalidBooleanOperation,
-    #[message = "attempted to subtract strings"]
-    InvalidStringOperation,
-    #[message = "attempted to perform null operations"]
-    InvalidNullOperation,
-    #[message = "string can't be parsed to a valid number"]
-    InvalidParsedNumber,
 }
 
 #[derive(Error)]
