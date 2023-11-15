@@ -76,7 +76,13 @@ impl Evaluable<LiteralData> for BinaryExpr {
                 Ok(literal_value) => Ok(literal_value),
                 Err(embedded_error) => Err(error!(ParserError::DivisionException)
                     .set_embedded_error(Box::new(embedded_error))),
-            }
+            },
+            TokenType::Greater => Ok(LiteralData::Bool(left > right)),
+            TokenType::GreaterEqual => Ok(LiteralData::Bool(left >= right)),
+            TokenType::Less => Ok(LiteralData::Bool(left < right)),
+            TokenType::LessEqual => Ok(LiteralData::Bool(left <= right)),
+            TokenType::BangEqual => Ok(LiteralData::Bool(left != right)),
+            TokenType::EqualEqual => Ok(LiteralData::Bool(left == right)),
             _ => Err(error!(ParserError::InvalidBinaryOperator)),
         }
     }
