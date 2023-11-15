@@ -5,7 +5,7 @@ use std::{
 
 use funlang_error::ErrorCascade;
 
-use crate::{error, errors::OperationError, parse_string_to_num};
+use crate::{error, errors::LiteralOperationError, parse_string_to_num};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum LiteralData {
@@ -16,14 +16,14 @@ pub enum LiteralData {
 }
 
 impl LiteralData {
-    fn parse_num(&self) -> Result<f32, ErrorCascade<OperationError>> {
+    fn parse_num(&self) -> Result<f32, ErrorCascade<LiteralOperationError>> {
         match self {
             LiteralData::Bool(bool_value) => Ok(if bool_value.clone() { 1.0 } else { 0.0 }),
             LiteralData::Number(number_value) => Ok(number_value.clone()),
             LiteralData::String(string_value) => {
                 let parsed_string_value = parse_string_to_num!(
                     string_value,
-                    error!(OperationError::InvalidParsedNumber(string_value.clone()))
+                    error!(LiteralOperationError::InvalidParsedNumber(string_value.clone()))
                 )?;
                 Ok(parsed_string_value)
             }
@@ -33,7 +33,7 @@ impl LiteralData {
 }
 
 impl Add for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<OperationError>>;
+    type Output = Result<LiteralData, ErrorCascade<LiteralOperationError>>;
     fn add(self, rhs: Self) -> Self::Output {
         match self {
             LiteralData::String(ref addend1) => match rhs {
@@ -54,21 +54,21 @@ impl Add for LiteralData {
 }
 
 impl Sub for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<OperationError>>;
+    type Output = Result<LiteralData, ErrorCascade<LiteralOperationError>>;
     fn sub(self, rhs: Self) -> Self::Output {
         Ok(LiteralData::Number(self.parse_num()? - rhs.parse_num()?))
     }
 }
 
 impl Mul for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<OperationError>>;
+    type Output = Result<LiteralData, ErrorCascade<LiteralOperationError>>;
     fn mul(self, rhs: Self) -> Self::Output {
         Ok(LiteralData::Number(self.parse_num()? * rhs.parse_num()?))
     }
 }
 
 impl Div for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<OperationError>>;
+    type Output = Result<LiteralData, ErrorCascade<LiteralOperationError>>;
     fn div(self, rhs: Self) -> Self::Output {
         Ok(LiteralData::Number(self.parse_num()? / rhs.parse_num()?))
     }

@@ -8,7 +8,7 @@ use crate::{
     token::{Token, TokenType},
 };
 
-trait Evaluable<R> {
+pub trait Evaluable<R> {
     fn evaluate(&self) -> Result<R, ErrorCascade<ParserError>>;
 }
 

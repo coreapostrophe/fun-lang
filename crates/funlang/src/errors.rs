@@ -1,7 +1,13 @@
 use funlang_derive::Error;
 
 #[derive(Error)]
-pub enum OperationError {
+pub enum InterpreterError {
+    #[message = "something went wrong while attempting to evaluate expression"]
+    EvalutationException
+}
+
+#[derive(Error)]
+pub enum LiteralOperationError {
     #[message = "type `boolean` can not be operated on"]
     InvalidBooleanOperation,
     #[message = "type `null` can not be subtracted"]
