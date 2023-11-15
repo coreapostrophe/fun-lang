@@ -2,16 +2,24 @@ use funlang_derive::Error;
 
 #[derive(Error)]
 pub enum OperationError {
-    #[message = "boolean operations are invalid"]
+    #[message = "type `boolean` can not be operated on"]
     InvalidBooleanOperation,
-    #[message = "string subtraction is invalid"]
-    InvalidStringSubtraction,
-    #[message = "null subtraction is invalid"]
+    #[message = "type `null` can not be subtracted"]
     InvalidNullSubtraction,
-    #[message = "null multiplication is invalid"]
+    #[message = "type `null` can not be multiplied"]
     InvalidNullMultiplication,
-    #[message = "parsed string number is invalid"]
-    InvalidParsedNumber,
+    #[message = "type `null` can not be divided"]
+    InvalidNullDivision,
+    #[message = "type `string` can not be divided"]
+    InvalidStringDivision,
+    #[message = "type `string` can not be multiplied"]
+    InvalidStringMultiplication,
+    #[message = "type `string` can not be subtracted"]
+    InvalidStringSubtraction,
+    #[message = "`{}` string can not be parsed to type `number`"]
+    InvalidParsedNumber(String),
+    #[message = "mistmatched types `{}` and `{}` can not be operated on"]
+    MismatchedType(String, String)
 }
 
 #[derive(Error)]

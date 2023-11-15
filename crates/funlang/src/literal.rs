@@ -20,18 +20,15 @@ impl Add for LiteralData {
             LiteralData::Number(addend1) => match rhs {
                 LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
                 LiteralData::Number(addend2) => Ok(LiteralData::Number(addend1 + addend2)),
-                LiteralData::String(addend2) => {
-                    let addend2 =
-                        parse_string_to_num!(addend2, error!(OperationError::InvalidParsedNumber))?;
-                    Ok(LiteralData::Number(addend1 + addend2))
-                }
+                LiteralData::String(_) => Err(error!(OperationError::MismatchedType(
+                    "number".to_string(),
+                    "string".to_string()
+                ))),
                 LiteralData::Null => Ok(LiteralData::Number(addend1)),
             },
             LiteralData::String(addend1) => match rhs {
                 LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
                 LiteralData::Number(addend2) => {
-                    let addend1 =
-                        parse_string_to_num!(addend1, error!(OperationError::InvalidParsedNumber))?;
                     Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
                 }
                 LiteralData::String(addend2) => Ok(LiteralData::String(addend1 + &addend2)),
@@ -50,13 +47,7 @@ impl Sub for LiteralData {
             LiteralData::String(_) => Err(error!(OperationError::InvalidStringSubtraction)),
             LiteralData::Number(minuend) => match rhs {
                 LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-                LiteralData::String(subtrahend) => {
-                    let subtrahend = parse_string_to_num!(
-                        subtrahend,
-                        error!(OperationError::InvalidParsedNumber)
-                    )?;
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
+                LiteralData::String(_) => Err(error!(OperationError::InvalidStringSubtraction)),
                 LiteralData::Number(subtrahend) => Ok(LiteralData::Number(minuend - subtrahend)),
                 LiteralData::Null => Ok(LiteralData::Number(minuend)),
             },
@@ -70,23 +61,10 @@ impl Mul for LiteralData {
     fn mul(self, rhs: Self) -> Self::Output {
         match self {
             LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-            LiteralData::String(multiplicand) => match rhs {
-                LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-                LiteralData::String(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-                LiteralData::Number(multiplier) => Ok(LiteralData::String(
-                    multiplicand.repeat(multiplier as usize),
-                )),
-                LiteralData::Null => Err(error!(OperationError::InvalidNullMultiplication)),
-            },
+            LiteralData::String(_) => Err(error!(OperationError::InvalidStringMultiplication)),
             LiteralData::Number(multiplicand) => match rhs {
                 LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-                LiteralData::String(multiplier) => {
-                    let multiplier = parse_string_to_num!(
-                        multiplier,
-                        error!(OperationError::InvalidParsedNumber)
-                    )?;
-                    Ok(LiteralData::Number(multiplicand * multiplier))
-                }
+                LiteralData::String(_) => Err(error!(OperationError::InvalidStringMultiplication)),
                 LiteralData::Number(multiplier) => {
                     Ok(LiteralData::Number(multiplicand * multiplier))
                 }
@@ -99,12 +77,17 @@ impl Mul for LiteralData {
 
 impl Div for LiteralData {
     type Output = Result<LiteralData, ErrorCascade<OperationError>>;
-    fn div(self, _rhs: Self) -> Self::Output {
+    fn div(self, rhs: Self) -> Self::Output {
         match self {
             LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-            LiteralData::String(_) => todo!(),
-            LiteralData::Number(_) => todo!(),
-            LiteralData::Null => todo!(),
+            LiteralData::String(_) => Err(error!(OperationError::InvalidStringDivision)),
+            LiteralData::Number(dividend) => match rhs {
+                LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
+                LiteralData::String(_) => Err(error!(OperationError::InvalidStringDivision)),
+                LiteralData::Number(divisor) => Ok(LiteralData::Number(dividend / divisor)),
+                LiteralData::Null => Err(error!(OperationError::InvalidNullDivision)),
+            },
+            LiteralData::Null => Err(error!(OperationError::InvalidNullDivision)),
         }
     }
 }
