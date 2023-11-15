@@ -1,4 +1,7 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::{
+    cmp::Ordering,
+    ops::{Add, Div, Mul, Sub},
+};
 
 use funlang_error::ErrorCascade;
 
@@ -72,19 +75,57 @@ impl Div for LiteralData {
 }
 
 impl PartialOrd for LiteralData {
-    fn gt(&self, _other: &Self) -> bool {
-        todo!()
+    fn gt(&self, other: &Self) -> bool {
+        match self.parse_num() {
+            Ok(self_value) => match other.parse_num() {
+                Ok(other_value) => self_value > other_value,
+                _ => false,
+            },
+            _ => false,
+        }
     }
-    fn ge(&self, _other: &Self) -> bool {
-        todo!()
+    fn ge(&self, other: &Self) -> bool {
+        match self.parse_num() {
+            Ok(self_value) => match other.parse_num() {
+                Ok(other_value) => self_value >= other_value,
+                _ => false,
+            },
+            _ => false,
+        }
     }
-    fn le(&self, _other: &Self) -> bool {
-        todo!()
+    fn le(&self, other: &Self) -> bool {
+        match self.parse_num() {
+            Ok(self_value) => match other.parse_num() {
+                Ok(other_value) => self_value <= other_value,
+                _ => false,
+            },
+            _ => false,
+        }
     }
-    fn lt(&self, _other: &Self) -> bool {
-        todo!()
+    fn lt(&self, other: &Self) -> bool {
+        match self.parse_num() {
+            Ok(self_value) => match other.parse_num() {
+                Ok(other_value) => self_value < other_value,
+                _ => false,
+            },
+            _ => false,
+        }
     }
-    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
-        todo!()
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.parse_num() {
+            Ok(self_value) => match other.parse_num() {
+                Ok(other_value) => {
+                    if self_value == other_value {
+                        Some(Ordering::Equal)
+                    } else if self_value > other_value {
+                        Some(Ordering::Equal)
+                    } else {
+                        Some(Ordering::Equal)
+                    }
+                }
+                _ => None,
+            },
+            _ => None,
+        }
     }
 }
