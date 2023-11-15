@@ -12,50 +12,40 @@ pub enum LiteralData {
     Null,
 }
 
+impl LiteralData {
+    fn parse_num(&self) -> Result<f32, ErrorCascade<OperationError>> {
+        match self {
+            LiteralData::Bool(bool_value) => Ok(if bool_value.clone() { 1.0 } else { 0.0 }),
+            LiteralData::Number(number_value) => Ok(number_value.clone()),
+            LiteralData::String(string_value) => {
+                let parsed_string_value = parse_string_to_num!(
+                    string_value,
+                    error!(OperationError::InvalidParsedNumber(string_value.clone()))
+                )?;
+                Ok(parsed_string_value)
+            }
+            LiteralData::Null => Ok(0.0),
+        }
+    }
+}
+
 impl Add for LiteralData {
     type Output = Result<LiteralData, ErrorCascade<OperationError>>;
     fn add(self, rhs: Self) -> Self::Output {
         match self {
-            LiteralData::Bool(addend1) => match rhs {
-                LiteralData::Bool(addend2) => {
-                    let addend1 = if addend1 { 1.0 } else { 0.0 };
-                    let addend2 = if addend2 { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(addend1 + addend2))
-                }
-                LiteralData::String(addend2) => {
+            LiteralData::String(ref addend1) => match rhs {
+                LiteralData::Bool(ref addend2) => {
                     Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
                 }
-                LiteralData::Number(addend2) => {
-                    let addend1 = if addend1 { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(addend1 + addend2))
-                }
-                LiteralData::Null => {
-                    let addend1 = if addend1 { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(addend1))
-                }
-            },
-            LiteralData::Number(addend1) => match rhs {
-                LiteralData::Bool(addend2) => {
-                    let addend2 = if addend2 { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(addend1 + addend2))
-                }
-                LiteralData::Number(addend2) => Ok(LiteralData::Number(addend1 + addend2)),
-                LiteralData::String(addend2) => {
+                LiteralData::String(ref addend2) => {
                     Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
                 }
-                LiteralData::Null => Ok(LiteralData::Number(addend1)),
-            },
-            LiteralData::String(addend1) => match rhs {
-                LiteralData::Bool(addend2) => {
+                LiteralData::Number(ref addend2) => {
                     Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
                 }
-                LiteralData::Number(addend2) => {
-                    Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
-                }
-                LiteralData::String(addend2) => Ok(LiteralData::String(addend1 + &addend2)),
                 LiteralData::Null => Ok(LiteralData::String(format!("{}null", addend1))),
             },
-            LiteralData::Null => Ok(rhs),
+            _ => Ok(LiteralData::Number(self.parse_num()? + rhs.parse_num()?)),
         }
     }
 }
@@ -63,128 +53,21 @@ impl Add for LiteralData {
 impl Sub for LiteralData {
     type Output = Result<LiteralData, ErrorCascade<OperationError>>;
     fn sub(self, rhs: Self) -> Self::Output {
-        match self {
-            LiteralData::Bool(minuend) => match rhs {
-                LiteralData::Bool(subtrahend) => {
-                    let minuend = if minuend { 1.0 } else { 0.0 };
-                    let subtrahend = if subtrahend { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
-                LiteralData::Number(subtrahend) => {
-                    let minuend = if minuend { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
-                LiteralData::String(_) => Err(error!(OperationError::MismatchedType(
-                    "bool".to_string(),
-                    "string".to_string()
-                ))),
-                LiteralData::Null => {
-                    let minuend = if minuend { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(minuend - 0.0))
-                }
-            },
-            LiteralData::String(minuend) => match rhs {
-                LiteralData::Bool(subtrahend) => {
-                    let minuend = parse_string_to_num!(
-                        minuend,
-                        error!(OperationError::InvalidParsedNumber(minuend))
-                    )?;
-                    let subtrahend = if subtrahend { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
-                LiteralData::Number(subtrahend) => {
-                    let minuend = parse_string_to_num!(
-                        minuend,
-                        error!(OperationError::InvalidParsedNumber(minuend))
-                    )?;
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
-                LiteralData::String(subtrahend) => {
-                    let minuend = parse_string_to_num!(
-                        minuend,
-                        error!(OperationError::InvalidParsedNumber(minuend))
-                    )?;
-                    let subtrahend = parse_string_to_num!(
-                        subtrahend,
-                        error!(OperationError::InvalidParsedNumber(subtrahend))
-                    )?;
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
-                LiteralData::Null => {
-                    let minuend = parse_string_to_num!(
-                        minuend,
-                        error!(OperationError::InvalidParsedNumber(minuend))
-                    )?;
-                    Ok(LiteralData::Number(minuend))
-                }
-            },
-            LiteralData::Number(minuend) => match rhs {
-                LiteralData::Bool(subtrahend) => {
-                    let subtrahend = if subtrahend { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
-                LiteralData::String(subtrahend) => {
-                    let subtrahend = parse_string_to_num!(
-                        subtrahend,
-                        error!(OperationError::InvalidParsedNumber(subtrahend))
-                    )?;
-                    Ok(LiteralData::Number(minuend - subtrahend))
-                }
-                LiteralData::Number(subtrahend) => Ok(LiteralData::Number(minuend - subtrahend)),
-                LiteralData::Null => Ok(LiteralData::Number(minuend)),
-            },
-            LiteralData::Null => match rhs {
-                LiteralData::Bool(subtrahend) => {
-                    let subtrahend = if subtrahend { 1.0 } else { 0.0 };
-                    Ok(LiteralData::Number(0.0 - subtrahend))
-                }
-                LiteralData::Number(subtrahend) => Ok(LiteralData::Number(0.0 - subtrahend)),
-                LiteralData::String(subtrahend) => {
-                    let subtrahend = parse_string_to_num!(
-                        subtrahend,
-                        error!(OperationError::InvalidParsedNumber(subtrahend))
-                    )?;
-                    Ok(LiteralData::Number(0.0 - subtrahend))
-                }
-                LiteralData::Null => Ok(LiteralData::Number(0.0))
-            },
-        }
+        Ok(LiteralData::Number(self.parse_num()? - rhs.parse_num()?))
     }
 }
 
 impl Mul for LiteralData {
     type Output = Result<LiteralData, ErrorCascade<OperationError>>;
     fn mul(self, rhs: Self) -> Self::Output {
-        match self {
-            LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-            LiteralData::String(_) => Err(error!(OperationError::InvalidStringMultiplication)),
-            LiteralData::Number(multiplicand) => match rhs {
-                LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-                LiteralData::String(_) => Err(error!(OperationError::InvalidStringMultiplication)),
-                LiteralData::Number(multiplier) => {
-                    Ok(LiteralData::Number(multiplicand * multiplier))
-                }
-                LiteralData::Null => Err(error!(OperationError::InvalidNullMultiplication)),
-            },
-            LiteralData::Null => Err(error!(OperationError::InvalidNullMultiplication)),
-        }
+        Ok(LiteralData::Number(self.parse_num()? * rhs.parse_num()?))
     }
 }
 
 impl Div for LiteralData {
     type Output = Result<LiteralData, ErrorCascade<OperationError>>;
     fn div(self, rhs: Self) -> Self::Output {
-        match self {
-            LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-            LiteralData::String(_) => Err(error!(OperationError::InvalidStringDivision)),
-            LiteralData::Number(dividend) => match rhs {
-                LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-                LiteralData::String(_) => Err(error!(OperationError::InvalidStringDivision)),
-                LiteralData::Number(divisor) => Ok(LiteralData::Number(dividend / divisor)),
-                LiteralData::Null => Err(error!(OperationError::InvalidNullDivision)),
-            },
-            LiteralData::Null => Err(error!(OperationError::InvalidNullDivision)),
-        }
+        Ok(LiteralData::Number(self.parse_num()? / rhs.parse_num()?))
     }
 }
 
