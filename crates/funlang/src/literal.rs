@@ -47,24 +47,7 @@ impl Sub for LiteralData {
     fn sub(self, rhs: Self) -> Self::Output {
         match self {
             LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-            LiteralData::String(minuend) => {
-                let minuend =
-                    parse_string_to_num!(minuend, error!(OperationError::InvalidParsedNumber))?;
-                match rhs {
-                    LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
-                    LiteralData::String(subtrahend) => {
-                        let subtrahend = parse_string_to_num!(
-                            subtrahend,
-                            error!(OperationError::InvalidParsedNumber)
-                        )?;
-                        Ok(LiteralData::Number(minuend - subtrahend))
-                    }
-                    LiteralData::Number(subtrahend) => {
-                        Ok(LiteralData::Number(minuend - subtrahend))
-                    }
-                    LiteralData::Null => Err(error!(OperationError::InvalidNullSubtraction)),
-                }
-            }
+            LiteralData::String(_) => Err(error!(OperationError::InvalidStringSubtraction)),
             LiteralData::Number(minuend) => match rhs {
                 LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
                 LiteralData::String(subtrahend) => {
@@ -116,9 +99,9 @@ impl Mul for LiteralData {
 
 impl Div for LiteralData {
     type Output = Result<LiteralData, ErrorCascade<OperationError>>;
-    fn div(self, rhs: Self) -> Self::Output {
+    fn div(self, _rhs: Self) -> Self::Output {
         match self {
-            LiteralData::Bool(_) => todo!(),
+            LiteralData::Bool(_) => Err(error!(OperationError::InvalidBooleanOperation)),
             LiteralData::String(_) => todo!(),
             LiteralData::Number(_) => todo!(),
             LiteralData::Null => todo!(),

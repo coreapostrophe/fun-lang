@@ -4,18 +4,25 @@ use funlang_error::{ErrorCascade, ErrorSpan};
 enum ParserError {
     #[message = "something went wrong during addition"]
     AdditionException,
-    #[message = "number is invalid"]
-    InvalidNumber,
+    #[message = "\"{}\" can't be parsed to type `{}`"]
+    InvalidNumber(String, String),
 }
 
 fn main() {
     let cascaded_error = ErrorCascade::new(ParserError::AdditionException)
         .set_span(ErrorSpan::new(0, 1, 1))
-        .set_embedded_error(Box::new(ErrorCascade::new(ParserError::InvalidNumber)));
+        .set_embedded_error(Box::new(ErrorCascade::new(ParserError::InvalidNumber(
+            "abc".to_string(),
+            std::any::type_name::<u32>().to_string(),
+        ))));
     let cascaded_span_error = ErrorCascade::new(ParserError::AdditionException)
         .set_span(ErrorSpan::new(0, 1, 1))
         .set_embedded_error(Box::new(
-            ErrorCascade::new(ParserError::InvalidNumber).set_span(ErrorSpan::new(0, 2, 1)),
+            ErrorCascade::new(ParserError::InvalidNumber(
+                "abc".to_string(),
+                std::any::type_name::<u32>().to_string(),
+            ))
+            .set_span(ErrorSpan::new(0, 2, 1)),
         ));
 
     println!("cascaded error: {}", cascaded_error);

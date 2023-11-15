@@ -1,6 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_quote, Data, DeriveInput, Fields, GenericParam, Generics, Meta, Variant};
+use syn::{
+    parse_quote, parse_str, Data, DeriveInput, Expr, Fields, GenericParam, Generics, Meta, Variant,
+};
 
 pub fn generate_error(input: DeriveInput) -> TokenStream {
     let identifier = input.ident;
@@ -41,16 +43,17 @@ fn build_debug_arms(data: &Data) -> Vec<TokenStream> {
             for variant in variants.iter() {
                 let variant_identifier = &variant.ident;
                 let stringified_identifier = variant_identifier.to_string();
-                let discriminant_initiator =
-                    discriminant_switch(&variant.fields, quote!((_)), quote!());
-                let match_arm = quote!(
-                    Self::#variant_identifier #discriminant_initiator  => #stringified_identifier.to_string(),
-                );
+                let match_arm = match &variant.fields {
+                    Fields::Unnamed(..) => {
+                        quote!(Self::#variant_identifier(..)  => #stringified_identifier.to_string(),)
+                    }
+                    _ => quote!(Self::#variant_identifier  => #stringified_identifier.to_string(),),
+                };
                 match_arms.push(match_arm);
             }
         }
-        Data::Struct(_) => (),
-        Data::Union(_) => (),
+        Data::Struct(..) => (),
+        Data::Union(..) => (),
     }
     match_arms
 }
@@ -64,8 +67,8 @@ fn build_display_arms(data: &Data) -> Vec<TokenStream> {
                 match_arms.push(build_display_arm(variant));
             }
         }
-        Data::Struct(_) => (),
-        Data::Union(_) => (),
+        Data::Struct(..) => (),
+        Data::Union(..) => (),
     }
     match_arms
 }
@@ -78,24 +81,34 @@ fn build_display_arm(variant: &Variant) -> TokenStream {
                 let expr = &meta_name_value.value;
                 quote!(#expr)
             }
-            Meta::List(_) => quote!(""),
-            Meta::Path(_) => quote!(""),
+            _ => quote!(""),
         },
-        _ => quote!(),
+        _ => quote!(""),
     };
-    let discriminant_initiator = discriminant_switch(&variant.fields, quote!((_)), quote!());
-    quote!(Self::#identifier #discriminant_initiator => #error_message.to_string(),)
+    let format_args = build_format_args(&variant.fields);
+    match format_args {
+        Some(format_args) => {
+            quote!(Self::#identifier (#(#format_args)*) => format!("{}", format_args!(#error_message, #(#format_args)*)),)
+        }
+        None => quote!(Self::#identifier => #error_message.to_string(),),
+    }
 }
 
-fn discriminant_switch(
-    fields: &Fields,
-    true_value: TokenStream,
-    false_value: TokenStream,
-) -> TokenStream {
+fn build_format_args(fields: &Fields) -> Option<Vec<TokenStream>> {
     match fields {
-        Fields::Unnamed(_) => true_value,
-        Fields::Named(_) => false_value,
-        Fields::Unit => false_value,
+        Fields::Unnamed(fields) => Some(
+            fields
+                .unnamed
+                .iter()
+                .enumerate()
+                .map(|(index, _field)| {
+                    let field_name: Expr = parse_str(&format!("field{}", index)).unwrap();
+                    quote!(#field_name,)
+                })
+                .collect(),
+        ),
+        Fields::Named(..) => None,
+        Fields::Unit => None,
     }
 }
 
