@@ -3,49 +3,45 @@ use funlang_derive::Error;
 #[derive(Error)]
 pub enum InterpreterError {
     #[message = "something went wrong while attempting to evaluate expression"]
-    EvalutationException
-}
-
-#[derive(Error)]
-pub enum LiteralOperationError {
-    #[message = "type `boolean` can not be operated on"]
-    InvalidBooleanOperation,
-    #[message = "type `null` can not be subtracted"]
-    InvalidNullSubtraction,
-    #[message = "type `null` can not be multiplied"]
-    InvalidNullMultiplication,
-    #[message = "type `null` can not be divided"]
-    InvalidNullDivision,
-    #[message = "type `string` can not be divided"]
-    InvalidStringDivision,
-    #[message = "type `string` can not be multiplied"]
-    InvalidStringMultiplication,
-    #[message = "type `string` can not be subtracted"]
-    InvalidStringSubtraction,
+    EvaluatationException,
     #[message = "`{}` string can not be parsed to type `number`"]
     InvalidParsedNumber(String),
-    #[message = "mistmatched types `{}` and `{}` can not be operated on"]
-    MismatchedType(String, String)
+    #[message = "`{}` is not a valid binary operator"]
+    InvalidBinaryOperator(String),
+    #[message = "`{}` is not a valid unary operator"]
+    InvalidUnaryOperator(String),
+    #[message = "Expression could not be identified"]
+    UnexpectedExpression,
+    #[message = "something went wrong during addition"]
+    AdditionException,
+    #[message = "something went wrong during subtraction"]
+    SubtractionException,
+    #[message = "something went wrong during division"]
+    DivisionException,
+    #[message = "something went wrong during multiplication"]
+    MultiplicationException,
+    #[message = "`(` grouping was not closed"]
+    UnterminatedGrouping,
+    #[message = "Literal data could not be identified"]
+    InvalidLiteralData,
+    #[message = "indexed token does not have a span"]
+    MissingSpan,
 }
 
 #[derive(Error)]
 pub enum LexerError {
     #[message = "lexer does not have a source"]
     MissingSource,
-    #[message = "unexpected character"]
-    UnexpectedCharacter,
+    #[message = "unexpected character `{}`"]
+    UnexpectedCharacter(String),
     #[message = "character being indexed is out of bounds"]
     InvalidCharacterIndex,
-    #[message = "string was not closed"]
+    #[message = "string literal was not closed"]
     UnterminatedString,
-    #[message = "invalid number"]
-    InvalidNumber,
 }
 
 #[derive(Error)]
 pub enum ParserError {
-    #[message = "indexed token does not have a span"]
-    MissingSpan,
     #[message = "parser does not have a token list input"]
     MissingTokens,
     #[message = "token being indexed is out of bounds"]
@@ -64,12 +60,7 @@ pub enum ParserError {
     InvalidUnaryOperator,
     #[message = "invalid binary operator"]
     InvalidBinaryOperator,
-    #[message = "something went wrong during addition"]
-    AdditionException,
-    #[message = "something went wrong during subtraction"]
-    SubtractionException,
-    #[message = "something went wrong during division"]
-    DivisionException,
-    #[message = "something went wrong during multiplication"]
-    MultiplicationException,
+    #[message = "indexed token does not have a span"]
+    MissingSpan,
+    
 }

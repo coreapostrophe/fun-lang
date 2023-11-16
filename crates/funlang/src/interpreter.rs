@@ -14,7 +14,7 @@ impl Interpreter {
         match expression.evaluate() {
             Ok(evaluated_value) => Ok(evaluated_value),
             Err(error) => {
-                Err(error!(InterpreterError::EvalutationException)
+                Err(error!(InterpreterError::EvaluatationException)
                     .set_embedded_error(Box::new(error)))
             }
         }

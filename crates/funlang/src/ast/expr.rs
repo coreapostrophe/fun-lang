@@ -3,8 +3,9 @@ use funlang_error::ErrorCascade;
 
 use crate::{
     error,
-    errors::ParserError,
+    errors::InterpreterError,
     literal::LiteralData,
+    parse_string_to_num,
     token::{Token, TokenType},
 };
 
@@ -26,7 +27,7 @@ pub enum Expr {
 }
 
 impl Evaluable<LiteralData> for Expr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
             Expr::Unary(unary_expr) => unary_expr.evaluate(),
             Expr::Binary(binary_expr) => binary_expr.evaluate(),
@@ -37,42 +38,48 @@ impl Evaluable<LiteralData> for Expr {
 }
 
 impl Evaluable<LiteralData> for LiteralExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         Ok(self.literal.clone())
     }
 }
 
 impl Evaluable<LiteralData> for GroupingExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         self.expression.evaluate()
     }
 }
 
 impl Evaluable<LiteralData> for BinaryExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         let left = self.left.evaluate()?;
         let right = self.right.evaluate()?;
         let operator = &self.operator.token_type;
+        let span = self
+            .operator
+            .span
+            .as_ref()
+            .ok_or(error!(InterpreterError::MissingSpan))?
+            .clone();
 
         match operator {
             TokenType::Plus => match left + right {
                 Ok(literal_value) => Ok(literal_value),
-                Err(embedded_error) => Err(error!(ParserError::AdditionException)
+                Err(embedded_error) => Err(error!(InterpreterError::AdditionException)
                     .set_embedded_error(Box::new(embedded_error))),
             },
             TokenType::Minus => match left - right {
                 Ok(literal_value) => Ok(literal_value),
-                Err(embedded_error) => Err(error!(ParserError::SubtractionException)
+                Err(embedded_error) => Err(error!(InterpreterError::SubtractionException)
                     .set_embedded_error(Box::new(embedded_error))),
             },
             TokenType::Star => match left * right {
                 Ok(literal_value) => Ok(literal_value),
-                Err(embedded_error) => Err(error!(ParserError::MultiplicationException)
+                Err(embedded_error) => Err(error!(InterpreterError::MultiplicationException)
                     .set_embedded_error(Box::new(embedded_error))),
             },
             TokenType::Slash => match left / right {
                 Ok(literal_value) => Ok(literal_value),
-                Err(embedded_error) => Err(error!(ParserError::DivisionException)
+                Err(embedded_error) => Err(error!(InterpreterError::DivisionException)
                     .set_embedded_error(Box::new(embedded_error))),
             },
             TokenType::Greater => Ok(LiteralData::Bool(left > right)),
@@ -81,19 +88,22 @@ impl Evaluable<LiteralData> for BinaryExpr {
             TokenType::LessEqual => Ok(LiteralData::Bool(left <= right)),
             TokenType::BangEqual => Ok(LiteralData::Bool(left != right)),
             TokenType::EqualEqual => Ok(LiteralData::Bool(left == right)),
-            _ => Err(error!(ParserError::InvalidBinaryOperator)),
+            token_type => Err(error!(InterpreterError::InvalidBinaryOperator(
+                token_type.to_string()
+            ))
+            .set_span(span.into())),
         }
     }
 }
 
 impl Evaluable<LiteralData> for UnaryExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<ParserError>> {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         let right = self.right.evaluate()?;
         let span = self
             .operator
             .span
             .as_ref()
-            .ok_or(error!(ParserError::MissingSpan))?
+            .ok_or(error!(InterpreterError::MissingSpan))?
             .clone();
         let operator = &self.operator.token_type;
 
@@ -118,16 +128,23 @@ impl Evaluable<LiteralData> for UnaryExpr {
             },
             TokenType::Minus => match right {
                 LiteralData::Null => Ok(LiteralData::Bool(true)),
-                LiteralData::Number(number) => Ok(LiteralData::Number(-number)),
-                LiteralData::Bool(_) => {
-                    Err(error!(ParserError::NegatedBoolean).set_span(span.into()))
+                LiteralData::Number(number_value) => Ok(LiteralData::Number(-number_value)),
+                LiteralData::Bool(boolean_value) => {
+                    let boolean_value = if boolean_value { 1.0 } else { 0.0 };
+                    Ok(LiteralData::Number(-boolean_value))
                 }
-                LiteralData::String(string) => match string.parse::<f32>() {
-                    Ok(parsed_number) => Ok(LiteralData::Number(parsed_number)),
-                    Err(_) => Err(error!(ParserError::InvalidNumber).set_span(span.into())),
-                },
+                LiteralData::String(string_value) => {
+                    let parsed_number = parse_string_to_num!(
+                        string_value,
+                        error!(InterpreterError::InvalidParsedNumber(string_value))
+                    )?;
+                    Ok(LiteralData::Number(parsed_number))
+                }
             },
-            _ => Err(error!(ParserError::InvalidUnaryOperator).set_span(span.into())),
+            token_type => Err(error!(InterpreterError::InvalidUnaryOperator(
+                token_type.to_string()
+            ))
+            .set_span(span.into())),
         }
     }
 }

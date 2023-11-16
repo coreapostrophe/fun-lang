@@ -191,7 +191,7 @@ impl Lexer {
                 } else if c.is_alphabetic() {
                     Ok(Some(self.identifier()?))
                 } else {
-                    Err(error!(LexerError::UnexpectedCharacter))
+                    Err(error!(LexerError::UnexpectedCharacter(c.to_string())))
                 }
             }
         }?;
