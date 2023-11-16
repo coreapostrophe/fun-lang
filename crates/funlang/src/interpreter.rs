@@ -31,8 +31,6 @@ mod interpreter_tests {
         let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
 
-        eprintln!("{:?}", Interpreter::interpret(parser_result.unwrap()));
-
-        // assert!(Interpreter::interpret(parser_result.unwrap()).is_ok());
+        assert!(Interpreter::interpret(parser_result.unwrap()).is_ok());
     }
 }
