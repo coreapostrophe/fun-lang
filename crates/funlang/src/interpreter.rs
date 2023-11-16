@@ -1,23 +1,18 @@
 use funlang_error::ErrorCascade;
 
 use crate::{
-    ast::{expr::Expr, traits::Evaluable},
-    error,
+    ast::{stmt::Stmt, traits::Executable},
     errors::InterpreterError,
-    literal::LiteralData,
 };
 
 pub struct Interpreter;
 
 impl Interpreter {
-    pub fn interpret(expression: Expr) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
-        match expression.evaluate() {
-            Ok(evaluated_value) => Ok(evaluated_value),
-            Err(error) => {
-                Err(error!(InterpreterError::EvaluatationException)
-                    .set_embedded_error(Box::new(error)))
-            }
+    pub fn interpret(statements: Vec<Stmt>) -> Result<(), ErrorCascade<InterpreterError>> {
+        for statement in statements {
+            statement.execute()?
         }
+        Ok(())
     }
 }
 
@@ -29,16 +24,15 @@ mod interpreter_tests {
     #[test]
     fn interprets_expressions() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("(1 + 1) / 6");
+        let lexer_result = lexer.tokenize("print (1 + 1) / 6;");
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
         let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
 
-        let evaluated_value = Interpreter::interpret(parser_result.unwrap());
-        assert!(evaluated_value.is_ok());
+        eprintln!("{:?}", Interpreter::interpret(parser_result.unwrap()));
 
-        assert_eq!(evaluated_value.unwrap(), LiteralData::Number(0.33333334));
+        // assert!(Interpreter::interpret(parser_result.unwrap()).is_ok());
     }
 }

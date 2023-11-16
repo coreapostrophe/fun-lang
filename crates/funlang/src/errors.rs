@@ -2,6 +2,8 @@ use funlang_derive::Error;
 
 #[derive(Error)]
 pub enum InterpreterError {
+    #[message = "something went wrong while attempting to execute statement"]
+    ExecutionException,
     #[message = "something went wrong while attempting to evaluate expression"]
     EvaluatationException,
     #[message = "`{}` string can not be parsed to type `number`"]
@@ -22,7 +24,7 @@ pub enum InterpreterError {
     MultiplicationException,
     #[message = "`(` grouping was not closed"]
     UnterminatedGrouping,
-    #[message = "Literal data could not be identified"]
+    #[message = "literal data could not be identified"]
     InvalidLiteralData,
     #[message = "indexed token does not have a span"]
     MissingSpan,
@@ -50,10 +52,12 @@ pub enum ParserError {
     InvalidNumber,
     #[message = "attempted to negate a boolean"]
     NegatedBoolean,
-    #[message = "invalid data"]
+    #[message = "literal data could not be identified"]
     InvalidLiteralData,
-    #[message = "grouping symbol was not closed"]
+    #[message = "`(` grouping was not closed"]
     UnterminatedGrouping,
+    #[message = "expressions should be terminated by `;`"]
+    UnterminatedExpression,
     #[message = "unexpected expression"]
     UnexpectedExpression,
     #[message = "invalid unary operator"]
@@ -62,5 +66,4 @@ pub enum ParserError {
     InvalidBinaryOperator,
     #[message = "indexed token does not have a span"]
     MissingSpan,
-    
 }

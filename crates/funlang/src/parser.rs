@@ -1,7 +1,10 @@
 use funlang_error::ErrorCascade;
 
 use crate::{
-    ast::expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
+    ast::{
+        expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
+        stmt::{ExpressionStmt, Stmt},
+    },
     error,
     errors::ParserError,
     literal::LiteralData,
@@ -227,11 +230,43 @@ impl Parser {
         self.crawled_index = 0;
     }
 
-    pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Expr, ErrorCascade<ParserError>> {
+    fn expression_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        let expression = self.expression()?;
+        self.consume(
+            TokenType::Semicolon,
+            error!(ParserError::UnterminatedExpression),
+        )?;
+        Ok(Stmt::Expression(Box::new(ExpressionStmt { expression })))
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        let expression = self.expression()?;
+        self.consume(
+            TokenType::Semicolon,
+            error!(ParserError::UnterminatedExpression),
+        )?;
+        Ok(Stmt::Expression(Box::new(ExpressionStmt { expression })))
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        if self.r#match(vec![TokenType::Print])? {
+            self.print_statement()
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Vec<Stmt>, ErrorCascade<ParserError>> {
         self.clear_state();
         self.tokens = Some(tokens);
 
-        Ok(self.expression()?)
+        let mut statements: Vec<Stmt> = vec![];
+
+        while !self.is_at_end()? {
+            statements.push(self.statement()?);
+        }
+
+        Ok(statements)
     }
 }
 
@@ -244,7 +279,7 @@ mod parser_tests {
     #[test]
     fn parses_expressions() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("(1 + 1) / 6");
+        let lexer_result = lexer.tokenize("print (1 + 1) / 6;");
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
