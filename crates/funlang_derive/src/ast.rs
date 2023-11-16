@@ -1,18 +1,19 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{TokenStream, Ident};
 use quote::{quote, quote_spanned};
 use syn::{Attribute, Data, DeriveInput, Expr, Meta, Variant};
 
 pub fn generate_ast(input: DeriveInput) -> TokenStream {
-    let data = input.data;
-    let generated_struct = handle_data(data);
+    let data = &input.data;
+    let input_identifier = &input.ident;
+    let generated_struct = handle_data(data, input_identifier);
     quote!(#generated_struct)
 }
 
-pub fn handle_data(data: Data) -> Option<TokenStream> {
+pub fn handle_data(data: &Data, input_identifier: &Ident) -> Option<TokenStream> {
     match data {
         Data::Enum(data_enum) => {
-            let variants = data_enum.variants;
-            let struct_definitions = variants.iter().map(|variant| build_struct(variant));
+            let variants = &data_enum.variants;
+            let struct_definitions = variants.iter().map(|variant| build_struct(variant, input_identifier));
             Some(quote!(#(#struct_definitions)*))
         }
         Data::Struct(_) => None,
@@ -20,11 +21,11 @@ pub fn handle_data(data: Data) -> Option<TokenStream> {
     }
 }
 
-pub fn build_struct(variant: &Variant) -> TokenStream {
+pub fn build_struct(variant: &Variant, input_identifier: &Ident) -> TokenStream {
     let identifier = &variant.ident;
     let formatted_identifier: Expr = {
         let identifier_string = &identifier.to_string();
-        let formatted_identifier_string = format!("{}Expr", identifier_string);
+        let formatted_identifier_string = format!("{}{}", identifier_string, input_identifier);
         syn::parse_str(&formatted_identifier_string).unwrap()
     };
     let fields = match variant.attrs.get(0) {

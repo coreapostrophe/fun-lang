@@ -1,9 +1,9 @@
 use funlang_error::ErrorCascade;
 
 use crate::{
+    ast::expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
     error,
     errors::ParserError,
-    expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
     literal::LiteralData,
     token::{Token, TokenType},
 };

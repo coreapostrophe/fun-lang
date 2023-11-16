@@ -8,9 +8,7 @@ use crate::{
     token::{Token, TokenType},
 };
 
-pub trait Evaluable<R> {
-    fn evaluate(&self) -> Result<R, ErrorCascade<ParserError>>;
-}
+use super::traits::Evaluable;
 
 #[derive(Ast, Debug, Clone)]
 pub enum Expr {

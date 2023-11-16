@@ -1,9 +1,9 @@
 use funlang_error::ErrorCascade;
 
 use crate::{
+    ast::{expr::Expr, traits::Evaluable},
     error,
     errors::InterpreterError,
-    expr::{Evaluable, Expr},
     literal::LiteralData,
 };
 
