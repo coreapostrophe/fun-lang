@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::{Attribute, Data, DeriveInput, Expr, Meta, Variant};
 
-pub fn generate_expr(input: DeriveInput) -> TokenStream {
+pub fn generate_ast(input: DeriveInput) -> TokenStream {
     let data = input.data;
     let generated_struct = handle_data(data);
     quote!(#generated_struct)

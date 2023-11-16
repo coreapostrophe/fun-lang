@@ -1,4 +1,4 @@
-#[derive(funlang_derive::Expr, Debug)]
+#[derive(funlang_derive::Ast, Debug)]
 enum Expr {
     #[production(left:String, right:String)]
     Grouped(Box<GroupedExpr>),

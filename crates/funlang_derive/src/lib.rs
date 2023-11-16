@@ -1,12 +1,12 @@
 use syn::{parse_macro_input, DeriveInput};
 
 mod error;
-mod expr;
+mod ast;
 
-#[proc_macro_derive(Expr, attributes(production))]
-pub fn derive_expression(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(Ast, attributes(production))]
+pub fn derive_ast(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let parsed_input = parse_macro_input!(input as DeriveInput);
-    let expanded = expr::generate_expr(parsed_input);
+    let expanded = ast::generate_ast(parsed_input);
     proc_macro::TokenStream::from(expanded)
 }
 

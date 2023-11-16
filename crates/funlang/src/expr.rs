@@ -1,4 +1,4 @@
-use funlang_derive::Expr;
+use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
 use crate::{
@@ -12,7 +12,7 @@ pub trait Evaluable<R> {
     fn evaluate(&self) -> Result<R, ErrorCascade<ParserError>>;
 }
 
-#[derive(Expr, Debug, Clone)]
+#[derive(Ast, Debug, Clone)]
 pub enum Expr {
     #[production(left:Expr, operator:Token, right:Expr)]
     Binary(Box<BinaryExpr>),
