@@ -2,8 +2,8 @@ use funlang_error::ErrorCascade;
 
 use crate::{
     ast::{
-        expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
-        stmt::{ExpressionStmt, Stmt},
+        expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
+        stmt::{ExpressionStmt, Stmt, VariableStmt},
     },
     error,
     errors::ParserError,
@@ -28,25 +28,6 @@ impl Parser {
         self.tokens
             .as_ref()
             .ok_or(error!(ParserError::MissingTokens))
-    }
-
-    fn _synchronize(&mut self) -> Result<(), ErrorCascade<ParserError>> {
-        if self.previous()?.token_type == TokenType::Semicolon {
-            return Ok(());
-        }
-
-        match self.peek()?.token_type {
-            TokenType::Let => Ok(()),
-            TokenType::For => Ok(()),
-            TokenType::If => Ok(()),
-            TokenType::While => Ok(()),
-            TokenType::Print => Ok(()),
-            TokenType::Return => Ok(()),
-            _ => {
-                self.advance()?;
-                Ok(())
-            }
-        }
     }
 
     fn is_at_end(&self) -> Result<bool, ErrorCascade<ParserError>> {
@@ -137,6 +118,10 @@ impl Parser {
                 error!(ParserError::UnterminatedGrouping).set_span(span.into()),
             )?;
             Ok(Expr::Grouping(Box::new(GroupingExpr { expression: expr })))
+        } else if self.r#match(vec![TokenType::Identifier])? {
+            Ok(Expr::Variable(Box::new(VariableExpr {
+                name: self.previous()?,
+            })))
         } else {
             let span = self.peek()?.span.ok_or(error!(ParserError::MissingSpan))?;
             Err(error!(ParserError::UnexpectedExpression).set_span(span.into()))
@@ -256,6 +241,36 @@ impl Parser {
         }
     }
 
+    pub fn var_declaration(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        self.consume(
+            TokenType::Identifier,
+            error!(ParserError::ExpectedIdentifier),
+        )?;
+
+        let name = self.previous()?;
+
+        let initializer = if self.r#match(vec![TokenType::Equal])? {
+            self.expression()
+        } else {
+            Err(error!(ParserError::ExpectedEqual))
+        }?;
+
+        self.consume(
+            TokenType::Semicolon,
+            error!(ParserError::UnterminatedExpression),
+        )?;
+
+        Ok(Stmt::Variable(Box::new(VariableStmt { name, initializer })))
+    }
+
+    pub fn declaration(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        if self.r#match(vec![TokenType::Let])? {
+            self.var_declaration()
+        } else {
+            self.statement()
+        }
+    }
+
     pub fn parse(&mut self, tokens: Vec<Token>) -> Result<Vec<Stmt>, ErrorCascade<ParserError>> {
         self.clear_state();
         self.tokens = Some(tokens);
@@ -263,7 +278,7 @@ impl Parser {
         let mut statements: Vec<Stmt> = vec![];
 
         while !self.is_at_end()? {
-            statements.push(self.statement()?);
+            statements.push(self.declaration()?);
         }
 
         Ok(statements)
@@ -279,7 +294,7 @@ mod parser_tests {
     #[test]
     fn parses_expressions() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("print (1 + 1) / 6;");
+        let lexer_result = lexer.tokenize("let hello = 6;");
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();

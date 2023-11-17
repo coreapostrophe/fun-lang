@@ -3,6 +3,7 @@ use funlang_error::{ErrorCascade, ErrorSpan};
 use crate::{
     error,
     errors::LexerError,
+    literal::LiteralData,
     token::{Span, Token, TokenType},
     token_lit_number, token_lit_string,
 };
@@ -117,7 +118,8 @@ impl Lexer {
 
         let token = match parsed_keyword {
             Some(keyword) => Token::new(keyword),
-            None => Token::new(TokenType::Identifier(literal_value.to_string())),
+            None => Token::new(TokenType::Identifier)
+                .set_literal_data(LiteralData::String(literal_value.to_string())),
         };
 
         Ok(token)
@@ -388,7 +390,8 @@ mod lexer_tests {
                 "{:?}",
                 vec![
                     Token::new(TokenType::Plus).set_span(Span::new(1, 0, 1)),
-                    Token::new(TokenType::Identifier("abcd1234".to_string()))
+                    Token::new(TokenType::Identifier)
+                        .set_literal_data(LiteralData::String("abcd1234".to_string()))
                         .set_span(Span::new(1, 1, 8)),
                     Token::new(TokenType::Plus).set_span(Span::new(1, 9, 1)),
                     Token::new(TokenType::EOF).set_span(Span::new(1, 10, 0)),
@@ -408,11 +411,15 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Identifier("h".to_string())).set_span(Span::new(1, 0, 1)),
+                    Token::new(TokenType::Identifier)
+                        .set_literal_data(LiteralData::String("h".to_string()))
+                        .set_span(Span::new(1, 0, 1)),
                     Token::new(TokenType::Plus).set_span(Span::new(1, 1, 1)),
                     Token::new(TokenType::And).set_span(Span::new(1, 2, 3)),
                     Token::new(TokenType::Plus).set_span(Span::new(1, 5, 1)),
-                    Token::new(TokenType::Identifier("h".to_string())).set_span(Span::new(1, 6, 1)),
+                    Token::new(TokenType::Identifier)
+                        .set_literal_data(LiteralData::String("h".to_string()))
+                        .set_span(Span::new(1, 6, 1)),
                     Token::new(TokenType::EOF).set_span(Span::new(1, 7, 0)),
                 ]
             )

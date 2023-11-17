@@ -66,4 +66,8 @@ pub enum ParserError {
     InvalidBinaryOperator,
     #[message = "indexed token does not have a span"]
     MissingSpan,
+    #[message = "expected an `=` symbol in variable declaration"]
+    ExpectedEqual,
+    #[message = "expected an identifier name"]
+    ExpectedIdentifier,
 }

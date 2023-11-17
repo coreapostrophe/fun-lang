@@ -1,4 +1,4 @@
-use crate::{ast::expr::Expr, error, errors::InterpreterError, literal::LiteralData};
+use crate::{ast::expr::Expr, error, errors::InterpreterError, literal::LiteralData, token::Token};
 use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
@@ -11,6 +11,9 @@ pub enum Stmt {
 
     #[production(expression:Expr)]
     Print(Box<PrintStmt>),
+
+    #[production(name:Token, initializer:Expr)]
+    Variable(Box<VariableStmt>),
 }
 
 impl Evaluable<LiteralData> for Stmt {
@@ -31,6 +34,9 @@ impl Evaluable<LiteralData> for Stmt {
                 Err(error) => Err(error!(InterpreterError::EvaluatationException)
                     .set_embedded_error(Box::new(error))),
             },
+            Self::Variable(_variable_statement) => {
+                todo!() 
+            }
         }
     }
 }

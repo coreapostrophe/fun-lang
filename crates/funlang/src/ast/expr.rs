@@ -24,6 +24,9 @@ pub enum Expr {
 
     #[production(operator:Token, right:Expr)]
     Unary(Box<UnaryExpr>),
+
+    #[production(name: Token)]
+    Variable(Box<VariableExpr>),
 }
 
 impl Evaluable<LiteralData> for Expr {
@@ -33,7 +36,14 @@ impl Evaluable<LiteralData> for Expr {
             Expr::Binary(binary_expr) => binary_expr.evaluate(),
             Expr::Literal(literal_expr) => literal_expr.evaluate(),
             Expr::Grouping(grouping_expr) => grouping_expr.evaluate(),
+            Expr::Variable(variable_expr) => variable_expr.evaluate(),
         }
+    }
+}
+
+impl Evaluable<LiteralData> for VariableExpr {
+    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+        todo!()
     }
 }
 

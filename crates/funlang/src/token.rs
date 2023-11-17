@@ -7,7 +7,7 @@ use crate::literal::LiteralData;
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Literals
-    Identifier(String),
+    Identifier,
     String,
     Number,
 
