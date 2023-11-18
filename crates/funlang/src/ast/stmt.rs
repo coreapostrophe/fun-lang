@@ -49,10 +49,10 @@ impl Evaluable<LiteralData> for Stmt {
                 if let Some(name) = variable_statement.name.lexeme.as_ref() {
                     match variable_statement.as_ref().initializer {
                         Some(ref initializer) => {
-                            environment.define(name.clone(), initializer.clone());
+                            environment.define(&name, initializer.clone());
                         }
                         None => environment.define(
-                            name.clone(),
+                            &name,
                             Expr::Literal(Box::new(LiteralExpr {
                                 literal: LiteralData::None,
                             })),

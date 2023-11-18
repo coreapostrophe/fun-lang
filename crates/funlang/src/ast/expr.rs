@@ -2,17 +2,21 @@ use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
 use crate::{
+    environment::Environment,
     error,
     errors::InterpreterError,
     literal::LiteralData,
     parse_string_to_num,
-    token::{Token, TokenType}, environment::Environment,
+    token::{Token, TokenType},
 };
 
 use super::traits::Evaluable;
 
 #[derive(Ast, Debug, Clone)]
 pub enum Expr {
+    #[production(name: Token, value: Expr)]
+    Assign(Box<AssignExpr>),
+
     #[production(left: Expr, operator: Token, right: Expr)]
     Binary(Box<BinaryExpr>),
 
@@ -40,16 +44,45 @@ impl Evaluable<LiteralData> for Expr {
             Expr::Literal(literal_expr) => literal_expr.evaluate(environment),
             Expr::Grouping(grouping_expr) => grouping_expr.evaluate(environment),
             Expr::Variable(variable_expr) => variable_expr.evaluate(environment),
+            Expr::Assign(assignment_expr) => assignment_expr.evaluate(environment),
         }
+    }
+}
+
+impl Evaluable<LiteralData> for AssignExpr {
+    fn evaluate(
+        &self,
+        environment: &mut Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+        let name = self
+            .name
+            .clone()
+            .lexeme
+            .ok_or(error!(InterpreterError::MissingIdentifier))?;
+        let variable = environment
+            .mut_variable(&name)
+            .ok_or(error!(InterpreterError::InvalidIdentifier(name)))?;
+        *variable = self.value.clone();
+
+        Ok(LiteralData::None)
     }
 }
 
 impl Evaluable<LiteralData> for VariableExpr {
     fn evaluate(
         &self,
-        _environment: &mut Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
-        todo!()
+        let identifier = self
+            .name
+            .lexeme
+            .clone()
+            .ok_or(error!(InterpreterError::MissingIdentifier))?;
+        let expression = environment
+            .variable(&identifier)
+            .ok_or(error!(InterpreterError::InvalidIdentifier(identifier)))?
+            .clone();
+        Ok(expression.evaluate(environment)?)
     }
 }
 

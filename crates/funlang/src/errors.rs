@@ -28,6 +28,10 @@ pub enum InterpreterError {
     InvalidLiteralData,
     #[message = "indexed token does not have a span"]
     MissingSpan,
+    #[message = "variable expression does not have an identifier"]
+    MissingIdentifier,
+    #[message = "variable with identifier `{}` does not exist"]
+    InvalidIdentifier(String),
 }
 
 #[derive(Error)]
@@ -70,4 +74,8 @@ pub enum ParserError {
     ExpectedEqual,
     #[message = "expected an identifier name"]
     ExpectedIdentifier,
+    #[message = "expression before the `=` symbol should be a valid variable"]
+    InvalidAssignmentTarget,
+    #[message = "variable with identifier `{}` does not exist"]
+    InvalidIdentifier(String),
 }

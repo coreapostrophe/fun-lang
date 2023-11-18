@@ -14,11 +14,15 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: String, value: Expr) {
-        self.variables.insert(name, value);
+    pub fn define(&mut self, name: &str, value: Expr) {
+        self.variables.insert(name.to_string(), value);
     }
 
-    pub fn get_variable(&self, name: &str) -> Option<&Expr> {
+    pub fn mut_variable(&mut self, name: &str) -> Option<&mut Expr> {
+        self.variables.get_mut(name)
+    }
+
+    pub fn variable(&self, name: &str) -> Option<&Expr> {
         self.variables.get(name)
     }
 }

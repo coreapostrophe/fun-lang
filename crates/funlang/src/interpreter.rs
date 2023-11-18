@@ -77,4 +77,20 @@ mod interpreter_tests {
 
         println!("{:#?}", interpreter.environment);
     }
+
+    #[test]
+    fn interprets_variable_assignments() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("let a = 6; a = 12;");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+
+        let mut interpreter = Interpreter::new();
+        assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+
+        println!("{:#?}", interpreter.environment);
+    }
 }

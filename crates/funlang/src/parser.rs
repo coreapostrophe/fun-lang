@@ -2,7 +2,7 @@ use funlang_error::ErrorCascade;
 
 use crate::{
     ast::{
-        expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
+        expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
         stmt::{ExpressionStmt, Stmt, VariableStmt},
     },
     error,
@@ -207,8 +207,26 @@ impl Parser {
         Ok(expr)
     }
 
+    fn assignment(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
+        let expr = self.equality()?;
+
+        if self.r#match(vec![TokenType::Equal])? {
+            let value = self.assignment()?;
+
+            match expr {
+                Expr::Variable(variable_expression) => {
+                    let name = variable_expression.name;
+                    Ok(Expr::Assign(Box::new(AssignExpr { name, value })))
+                }
+                _ => Err(error!(ParserError::InvalidAssignmentTarget)),
+            }
+        } else {
+            Ok(expr)
+        }
+    }
+
     fn expression(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
-        Ok(self.equality()?)
+        Ok(self.assignment()?)
     }
 
     fn clear_state(&mut self) {
