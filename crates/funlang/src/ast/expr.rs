@@ -6,7 +6,7 @@ use crate::{
     errors::InterpreterError,
     literal::LiteralData,
     parse_string_to_num,
-    token::{Token, TokenType},
+    token::{Token, TokenType}, environment::Environment,
 };
 
 use super::traits::Evaluable;
@@ -30,39 +30,54 @@ pub enum Expr {
 }
 
 impl Evaluable<LiteralData> for Expr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+    fn evaluate(
+        &self,
+        environment: &Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
-            Expr::Unary(unary_expr) => unary_expr.evaluate(),
-            Expr::Binary(binary_expr) => binary_expr.evaluate(),
-            Expr::Literal(literal_expr) => literal_expr.evaluate(),
-            Expr::Grouping(grouping_expr) => grouping_expr.evaluate(),
-            Expr::Variable(variable_expr) => variable_expr.evaluate(),
+            Expr::Unary(unary_expr) => unary_expr.evaluate(environment),
+            Expr::Binary(binary_expr) => binary_expr.evaluate(environment),
+            Expr::Literal(literal_expr) => literal_expr.evaluate(environment),
+            Expr::Grouping(grouping_expr) => grouping_expr.evaluate(environment),
+            Expr::Variable(variable_expr) => variable_expr.evaluate(environment),
         }
     }
 }
 
 impl Evaluable<LiteralData> for VariableExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+    fn evaluate(
+        &self,
+        _environment: &Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         todo!()
     }
 }
 
 impl Evaluable<LiteralData> for LiteralExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+    fn evaluate(
+        &self,
+        _environment: &Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         Ok(self.literal.clone())
     }
 }
 
 impl Evaluable<LiteralData> for GroupingExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
-        self.expression.evaluate()
+    fn evaluate(
+        &self,
+        environment: &Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+        self.expression.evaluate(environment)
     }
 }
 
 impl Evaluable<LiteralData> for BinaryExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
-        let left = self.left.evaluate()?;
-        let right = self.right.evaluate()?;
+    fn evaluate(
+        &self,
+        environment: &Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+        let left = self.left.evaluate(environment)?;
+        let right = self.right.evaluate(environment)?;
         let operator = &self.operator.token_type;
         let span = self
             .operator
@@ -107,8 +122,11 @@ impl Evaluable<LiteralData> for BinaryExpr {
 }
 
 impl Evaluable<LiteralData> for UnaryExpr {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
-        let right = self.right.evaluate()?;
+    fn evaluate(
+        &self,
+        environment: &Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+        let right = self.right.evaluate(environment)?;
         let span = self
             .operator
             .span

@@ -1,4 +1,7 @@
-use crate::{ast::expr::Expr, error, errors::InterpreterError, literal::LiteralData, token::Token};
+use crate::{
+    ast::expr::Expr, environment::Environment, error, errors::InterpreterError,
+    literal::LiteralData, token::Token,
+};
 use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
@@ -17,33 +20,38 @@ pub enum Stmt {
 }
 
 impl Evaluable<LiteralData> for Stmt {
-    fn evaluate(&self) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+    fn evaluate(
+        &self,
+        environment: &Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
             Self::Expression(expression_statement) => {
-                match expression_statement.expression.evaluate() {
+                match expression_statement.expression.evaluate(environment) {
                     Ok(evaluated_value) => Ok(evaluated_value),
                     Err(error) => Err(error!(InterpreterError::EvaluatationException)
                         .set_embedded_error(Box::new(error))),
                 }
             }
-            Self::Print(print_statement) => match print_statement.expression.evaluate() {
-                Ok(evaluated_value) => {
-                    println!("{:?}", evaluated_value);
-                    Ok(evaluated_value)
+            Self::Print(print_statement) => {
+                match print_statement.expression.evaluate(environment) {
+                    Ok(evaluated_value) => {
+                        println!("{:?}", evaluated_value);
+                        Ok(evaluated_value)
+                    }
+                    Err(error) => Err(error!(InterpreterError::EvaluatationException)
+                        .set_embedded_error(Box::new(error))),
                 }
-                Err(error) => Err(error!(InterpreterError::EvaluatationException)
-                    .set_embedded_error(Box::new(error))),
-            },
+            }
             Self::Variable(_variable_statement) => {
-                todo!() 
+                todo!()
             }
         }
     }
 }
 
 impl Executable for Stmt {
-    fn execute(&self) -> Result<(), ErrorCascade<InterpreterError>> {
-        match self.evaluate() {
+    fn execute(&self, environment: &Environment) -> Result<(), ErrorCascade<InterpreterError>> {
+        match self.evaluate(environment) {
             Ok(_) => Ok(()),
             Err(error) => {
                 Err(error!(InterpreterError::ExecutionException)

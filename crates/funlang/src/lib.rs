@@ -6,3 +6,4 @@ pub mod token;
 pub mod literal;
 pub mod interpreter;
 pub mod ast;
+pub mod environment;

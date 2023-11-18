@@ -1,11 +1,11 @@
 use funlang_error::ErrorCascade;
 
-use crate::errors::InterpreterError;
+use crate::{environment::Environment, errors::InterpreterError};
 
 pub trait Evaluable<R> {
-    fn evaluate(&self) -> Result<R, ErrorCascade<InterpreterError>>;
+    fn evaluate(&self, environment: &Environment) -> Result<R, ErrorCascade<InterpreterError>>;
 }
 
 pub trait Executable {
-    fn execute(&self) -> Result<(), ErrorCascade<InterpreterError>>;
+    fn execute(&self, environment: &Environment) -> Result<(), ErrorCascade<InterpreterError>>;
 }
