@@ -1,6 +1,6 @@
-use proc_macro2::{TokenStream, Ident};
+use proc_macro2::{Ident, TokenStream};
 use quote::{quote, quote_spanned};
-use syn::{Attribute, Data, DeriveInput, Expr, Meta, Variant};
+use syn::{Attribute, Data, DeriveInput, Expr, Meta, Type, Variant};
 
 pub fn generate_ast(input: DeriveInput) -> TokenStream {
     let data = &input.data;
@@ -13,7 +13,9 @@ pub fn handle_data(data: &Data, input_identifier: &Ident) -> Option<TokenStream>
     match data {
         Data::Enum(data_enum) => {
             let variants = &data_enum.variants;
-            let struct_definitions = variants.iter().map(|variant| build_struct(variant, input_identifier));
+            let struct_definitions = variants
+                .iter()
+                .map(|variant| build_struct(variant, input_identifier));
             Some(quote!(#(#struct_definitions)*))
         }
         Data::Struct(_) => None,
@@ -53,14 +55,14 @@ pub fn build_fields(attribute: &Attribute) -> Option<Vec<TokenStream>> {
                 .split(',')
                 .map(|named_value| {
                     let trimmed_named_value = named_value.trim();
-                    let splitted_named_value: Vec<String> = trimmed_named_value
-                        .split(':')
-                        .map(|s| s.trim().to_string())
-                        .collect();
-                    let identifier = splitted_named_value.get(0).unwrap();
+                    let splitted_named_value = trimmed_named_value.split_once(':').unwrap();
+
+                    let identifier = &splitted_named_value.0.trim();
                     let identifier: Expr = syn::parse_str(&identifier).unwrap();
-                    let parsed_type = splitted_named_value.get(1).unwrap();
-                    let parsed_type: Expr = syn::parse_str(&parsed_type).unwrap();
+
+                    let parsed_type = &splitted_named_value.1.trim();
+                    let parsed_type: Type = syn::parse_str(&parsed_type).unwrap();
+                    
                     quote!(pub #identifier : #parsed_type,)
                 })
                 .collect();
