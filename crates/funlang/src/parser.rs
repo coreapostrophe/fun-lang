@@ -98,9 +98,9 @@ impl Parser {
             Ok(Expr::Literal(Box::new(LiteralExpr {
                 literal: LiteralData::Bool(true),
             })))
-        } else if self.r#match(vec![TokenType::Null])? {
+        } else if self.r#match(vec![TokenType::None])? {
             Ok(Expr::Literal(Box::new(LiteralExpr {
-                literal: LiteralData::Null,
+                literal: LiteralData::None,
             })))
         } else if self.r#match(vec![TokenType::Number, TokenType::String])? {
             let span = self.peek()?.span.ok_or(error!(ParserError::MissingSpan))?;
@@ -250,10 +250,10 @@ impl Parser {
         let name = self.previous()?;
 
         let initializer = if self.r#match(vec![TokenType::Equal])? {
-            self.expression()
+            Some(self.expression()?)
         } else {
-            Err(error!(ParserError::ExpectedEqual))
-        }?;
+            None
+        };
 
         self.consume(
             TokenType::Semicolon,
@@ -301,6 +301,6 @@ mod parser_tests {
         let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
 
-        println!("\n{:#?}", parser_result.unwrap());
+        // println!("\n{:#?}", parser_result.unwrap());
     }
 }

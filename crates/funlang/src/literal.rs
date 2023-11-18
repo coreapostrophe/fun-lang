@@ -12,7 +12,7 @@ pub enum LiteralData {
     String(String),
     Number(f32),
     Bool(bool),
-    Null,
+    None,
 }
 
 impl LiteralData {
@@ -27,7 +27,7 @@ impl LiteralData {
                 )?;
                 Ok(parsed_string_value)
             }
-            LiteralData::Null => Ok(0.0),
+            LiteralData::None => Ok(0.0),
         }
     }
 }
@@ -46,7 +46,7 @@ impl Add for LiteralData {
                 LiteralData::Number(ref addend2) => {
                     Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
                 }
-                LiteralData::Null => Ok(LiteralData::String(format!("{}null", addend1))),
+                LiteralData::None => Ok(LiteralData::String(format!("{}null", addend1))),
             },
             _ => Ok(LiteralData::Number(self.parse_num()? + rhs.parse_num()?)),
         }

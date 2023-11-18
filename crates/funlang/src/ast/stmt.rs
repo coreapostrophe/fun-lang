@@ -5,24 +5,27 @@ use crate::{
 use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
-use super::traits::{Evaluable, Executable};
+use super::{
+    expr::LiteralExpr,
+    traits::{Evaluable, Executable},
+};
 
 #[derive(Ast, Debug, Clone)]
 pub enum Stmt {
-    #[production(expression:Expr)]
+    #[production(expression: Expr)]
     Expression(Box<ExpressionStmt>),
 
-    #[production(expression:Expr)]
+    #[production(expression: Expr)]
     Print(Box<PrintStmt>),
 
-    #[production(name:Token, initializer:Expr)]
+    #[production(name: Token, initializer: Option<Expr>)]
     Variable(Box<VariableStmt>),
 }
 
 impl Evaluable<LiteralData> for Stmt {
     fn evaluate(
         &self,
-        environment: &Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
             Self::Expression(expression_statement) => {
@@ -42,15 +45,28 @@ impl Evaluable<LiteralData> for Stmt {
                         .set_embedded_error(Box::new(error))),
                 }
             }
-            Self::Variable(_variable_statement) => {
-                todo!()
+            Self::Variable(variable_statement) => {
+                if let Some(name) = variable_statement.name.lexeme.as_ref() {
+                    match variable_statement.as_ref().initializer {
+                        Some(ref initializer) => {
+                            environment.define(name.clone(), initializer.clone());
+                        }
+                        None => environment.define(
+                            name.clone(),
+                            Expr::Literal(Box::new(LiteralExpr {
+                                literal: LiteralData::None,
+                            })),
+                        ),
+                    }
+                }
+                Ok(LiteralData::None)
             }
         }
     }
 }
 
 impl Executable for Stmt {
-    fn execute(&self, environment: &Environment) -> Result<(), ErrorCascade<InterpreterError>> {
+    fn execute(&self, environment: &mut Environment) -> Result<(), ErrorCascade<InterpreterError>> {
         match self.evaluate(environment) {
             Ok(_) => Ok(()),
             Err(error) => {

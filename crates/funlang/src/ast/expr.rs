@@ -13,16 +13,16 @@ use super::traits::Evaluable;
 
 #[derive(Ast, Debug, Clone)]
 pub enum Expr {
-    #[production(left:Expr, operator:Token, right:Expr)]
+    #[production(left: Expr, operator: Token, right: Expr)]
     Binary(Box<BinaryExpr>),
 
-    #[production(expression:Expr)]
+    #[production(expression: Expr)]
     Grouping(Box<GroupingExpr>),
 
-    #[production(literal:LiteralData)]
+    #[production(literal: LiteralData)]
     Literal(Box<LiteralExpr>),
 
-    #[production(operator:Token, right:Expr)]
+    #[production(operator: Token, right: Expr)]
     Unary(Box<UnaryExpr>),
 
     #[production(name: Token)]
@@ -32,7 +32,7 @@ pub enum Expr {
 impl Evaluable<LiteralData> for Expr {
     fn evaluate(
         &self,
-        environment: &Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
             Expr::Unary(unary_expr) => unary_expr.evaluate(environment),
@@ -47,7 +47,7 @@ impl Evaluable<LiteralData> for Expr {
 impl Evaluable<LiteralData> for VariableExpr {
     fn evaluate(
         &self,
-        _environment: &Environment,
+        _environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         todo!()
     }
@@ -56,7 +56,7 @@ impl Evaluable<LiteralData> for VariableExpr {
 impl Evaluable<LiteralData> for LiteralExpr {
     fn evaluate(
         &self,
-        _environment: &Environment,
+        _environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         Ok(self.literal.clone())
     }
@@ -65,7 +65,7 @@ impl Evaluable<LiteralData> for LiteralExpr {
 impl Evaluable<LiteralData> for GroupingExpr {
     fn evaluate(
         &self,
-        environment: &Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         self.expression.evaluate(environment)
     }
@@ -74,7 +74,7 @@ impl Evaluable<LiteralData> for GroupingExpr {
 impl Evaluable<LiteralData> for BinaryExpr {
     fn evaluate(
         &self,
-        environment: &Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         let left = self.left.evaluate(environment)?;
         let right = self.right.evaluate(environment)?;
@@ -124,7 +124,7 @@ impl Evaluable<LiteralData> for BinaryExpr {
 impl Evaluable<LiteralData> for UnaryExpr {
     fn evaluate(
         &self,
-        environment: &Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         let right = self.right.evaluate(environment)?;
         let span = self
@@ -137,7 +137,7 @@ impl Evaluable<LiteralData> for UnaryExpr {
 
         match operator {
             TokenType::Bang => match right {
-                LiteralData::Null => Ok(LiteralData::Bool(true)),
+                LiteralData::None => Ok(LiteralData::Bool(true)),
                 LiteralData::Bool(bool) => Ok(LiteralData::Bool(!bool)),
                 LiteralData::Number(number) => {
                     if number != 0.0 {
@@ -155,7 +155,7 @@ impl Evaluable<LiteralData> for UnaryExpr {
                 }
             },
             TokenType::Minus => match right {
-                LiteralData::Null => Ok(LiteralData::Bool(true)),
+                LiteralData::None => Ok(LiteralData::Bool(true)),
                 LiteralData::Number(number_value) => Ok(LiteralData::Number(-number_value)),
                 LiteralData::Bool(boolean_value) => {
                     let boolean_value = if boolean_value { 1.0 } else { 0.0 };

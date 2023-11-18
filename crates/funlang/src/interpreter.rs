@@ -6,6 +6,7 @@ use crate::{
     errors::InterpreterError,
 };
 
+#[derive(Debug)]
 pub struct Interpreter {
     environment: Environment,
 }
@@ -17,9 +18,12 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret(&self, statements: Vec<Stmt>) -> Result<(), ErrorCascade<InterpreterError>> {
+    pub fn interpret(
+        &mut self,
+        statements: Vec<Stmt>,
+    ) -> Result<(), ErrorCascade<InterpreterError>> {
         for statement in statements {
-            statement.execute(&self.environment)?
+            statement.execute(&mut self.environment)?
         }
         Ok(())
     }
@@ -31,7 +35,21 @@ mod interpreter_tests {
     use crate::{lexer::Lexer, parser::Parser};
 
     #[test]
-    fn interprets_expressions() {
+    fn interprets_expression_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("(1 + 1) / 6;");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+
+        let mut interpreter = Interpreter::new();
+        assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+    }
+
+    #[test]
+    fn interprets_print_statements() {
         let mut lexer = Lexer::new();
         let lexer_result = lexer.tokenize("print (1 + 1) / 6;");
         assert!(lexer_result.is_ok());
@@ -40,7 +58,23 @@ mod interpreter_tests {
         let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
 
-        let interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new();
         assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+    }
+
+    #[test]
+    fn interprets_variable_declarations() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("let a = 6;");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+
+        let mut interpreter = Interpreter::new();
+        assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+
+        println!("{:#?}", interpreter.environment);
     }
 }
