@@ -60,8 +60,8 @@ pub enum ParserError {
     InvalidLiteralData,
     #[message = "`(` grouping was not closed"]
     UnterminatedGrouping,
-    #[message = "expressions should be terminated by `;`"]
-    UnterminatedExpression,
+    #[message = "statements should be terminated by `;`"]
+    UnterminatedStatement,
     #[message = "unexpected expression"]
     UnexpectedExpression,
     #[message = "invalid unary operator"]

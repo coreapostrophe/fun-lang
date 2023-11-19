@@ -3,7 +3,7 @@ use funlang_error::ErrorCascade;
 use crate::{
     ast::{
         expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
-        stmt::{ExpressionStmt, Stmt, VariableStmt},
+        stmt::{ExpressionStmt, Stmt, VariableStmt, PrintStmt},
     },
     error,
     errors::ParserError,
@@ -28,6 +28,10 @@ impl Parser {
         self.tokens
             .as_ref()
             .ok_or(error!(ParserError::MissingTokens))
+    }
+
+    fn clear_state(&mut self) {
+        self.crawled_index = 0;
     }
 
     fn is_at_end(&self) -> Result<bool, ErrorCascade<ParserError>> {
@@ -229,15 +233,11 @@ impl Parser {
         Ok(self.assignment()?)
     }
 
-    fn clear_state(&mut self) {
-        self.crawled_index = 0;
-    }
-
     fn expression_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
         let expression = self.expression()?;
         self.consume(
             TokenType::Semicolon,
-            error!(ParserError::UnterminatedExpression),
+            error!(ParserError::UnterminatedStatement),
         )?;
         Ok(Stmt::Expression(Box::new(ExpressionStmt { expression })))
     }
@@ -246,9 +246,9 @@ impl Parser {
         let expression = self.expression()?;
         self.consume(
             TokenType::Semicolon,
-            error!(ParserError::UnterminatedExpression),
+            error!(ParserError::UnterminatedStatement),
         )?;
-        Ok(Stmt::Expression(Box::new(ExpressionStmt { expression })))
+        Ok(Stmt::Print(Box::new(PrintStmt { expression })))
     }
 
     fn statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
@@ -275,7 +275,7 @@ impl Parser {
 
         self.consume(
             TokenType::Semicolon,
-            error!(ParserError::UnterminatedExpression),
+            error!(ParserError::UnterminatedStatement),
         )?;
 
         Ok(Stmt::Variable(Box::new(VariableStmt { name, initializer })))
