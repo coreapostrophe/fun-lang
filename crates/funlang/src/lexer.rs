@@ -13,6 +13,7 @@ pub struct Lexer {
     start_index: usize,
     crawled_index: usize,
     line_number: usize,
+    col_number: usize,
 }
 
 impl Lexer {
@@ -22,7 +23,15 @@ impl Lexer {
             start_index: 0,
             crawled_index: 0,
             line_number: 1,
+            col_number: 0,
         }
+    }
+
+    fn clear_state(&mut self) {
+        self.start_index = 0;
+        self.crawled_index = 0;
+        self.line_number = 1;
+        self.col_number = 0;
     }
 
     fn unwrap_source(&self) -> Result<&String, ErrorCascade<LexerError>> {
@@ -36,7 +45,12 @@ impl Lexer {
     }
 
     fn advance(&mut self, value: usize) {
+        self.col_number += value;
         self.crawled_index += value;
+    }
+
+    fn previous(&mut self) -> Result<Option<char>, ErrorCascade<LexerError>> {
+        Ok(self.unwrap_source()?.chars().nth(self.crawled_index - 1))
     }
 
     fn peek(&mut self, lookahead_offset: usize) -> Result<char, ErrorCascade<LexerError>> {
@@ -126,6 +140,8 @@ impl Lexer {
     fn identify_token(&mut self) -> Result<Option<Token>, ErrorCascade<LexerError>> {
         let c = self.peek(0)?;
 
+        let cached_col = self.col_number;
+
         let token = match c {
             '(' => Ok(Some(Token::new(TokenType::LeftParen))),
             ')' => Ok(Some(Token::new(TokenType::RightParen))),
@@ -172,6 +188,7 @@ impl Lexer {
                     while self.peek(0)? != '\n' && !self.is_at_end()? {
                         self.advance(1);
                     }
+                    self.line_number += 1;
                     Ok(None)
                 } else {
                     Ok(Some(Token::new(TokenType::Slash)))
@@ -198,20 +215,20 @@ impl Lexer {
 
         self.advance(1);
 
+        if let Some(previous) = self.previous()? {
+            if previous == '\n' {
+                self.col_number = 0;
+            }
+        }
+
         match token {
             Some(token) => Ok(Some(token.set_span(Span::new(
                 self.line_number,
-                self.start_index,
+                cached_col + 1,
                 self.crawled_index - self.start_index,
             )))),
             None => Ok(None),
         }
-    }
-
-    fn clear_state(&mut self) {
-        self.start_index = 0;
-        self.crawled_index = 0;
-        self.line_number = 1;
     }
 
     pub fn tokenize(&mut self, source: &str) -> Result<Vec<Token>, ErrorCascade<LexerError>> {
@@ -223,15 +240,14 @@ impl Lexer {
         while !self.is_at_end()? {
             self.start_index = self.crawled_index;
 
-            match self.identify_token()? {
-                Some(token) => tokens.push(token),
-                None => (),
+            if let Some(token) = self.identify_token()? {
+                tokens.push(token);
             }
         }
 
         tokens.push(Token::new(TokenType::EOF).set_span(Span::new(
             self.line_number,
-            self.start_index + 1,
+            self.col_number + 1,
             0,
         )));
 
@@ -254,20 +270,20 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::LeftBracket).set_span(Span::new(1, 0, 1)),
-                    Token::new(TokenType::RightBracket).set_span(Span::new(1, 1, 1)),
-                    Token::new(TokenType::LeftParen).set_span(Span::new(1, 2, 1)),
-                    Token::new(TokenType::RightParen).set_span(Span::new(1, 3, 1)),
-                    Token::new(TokenType::LeftBrace).set_span(Span::new(1, 4, 1)),
-                    Token::new(TokenType::RightBrace).set_span(Span::new(1, 5, 1)),
-                    Token::new(TokenType::Comma).set_span(Span::new(1, 6, 1)),
-                    Token::new(TokenType::Dot).set_span(Span::new(1, 7, 1)),
-                    Token::new(TokenType::Minus).set_span(Span::new(1, 8, 1)),
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 9, 1)),
-                    Token::new(TokenType::Semicolon).set_span(Span::new(1, 10, 1)),
-                    Token::new(TokenType::Star).set_span(Span::new(1, 11, 1)),
-                    Token::new(TokenType::Slash).set_span(Span::new(1, 12, 1)),
-                    Token::new(TokenType::EOF).set_span(Span::new(1, 13, 0))
+                    Token::new(TokenType::LeftBracket).set_span(Span::new(1, 1, 1)),
+                    Token::new(TokenType::RightBracket).set_span(Span::new(1, 2, 1)),
+                    Token::new(TokenType::LeftParen).set_span(Span::new(1, 3, 1)),
+                    Token::new(TokenType::RightParen).set_span(Span::new(1, 4, 1)),
+                    Token::new(TokenType::LeftBrace).set_span(Span::new(1, 5, 1)),
+                    Token::new(TokenType::RightBrace).set_span(Span::new(1, 6, 1)),
+                    Token::new(TokenType::Comma).set_span(Span::new(1, 7, 1)),
+                    Token::new(TokenType::Dot).set_span(Span::new(1, 8, 1)),
+                    Token::new(TokenType::Minus).set_span(Span::new(1, 9, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 10, 1)),
+                    Token::new(TokenType::Semicolon).set_span(Span::new(1, 11, 1)),
+                    Token::new(TokenType::Star).set_span(Span::new(1, 12, 1)),
+                    Token::new(TokenType::Slash).set_span(Span::new(1, 13, 1)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 14, 0))
                 ]
             )
         )
@@ -284,15 +300,15 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Bang).set_span(Span::new(1, 0, 1)),
-                    Token::new(TokenType::BangEqual).set_span(Span::new(1, 1, 2)),
-                    Token::new(TokenType::EqualEqual).set_span(Span::new(1, 3, 2)),
-                    Token::new(TokenType::Equal).set_span(Span::new(1, 5, 1)),
-                    Token::new(TokenType::Less).set_span(Span::new(1, 6, 1)),
-                    Token::new(TokenType::LessEqual).set_span(Span::new(1, 7, 2)),
-                    Token::new(TokenType::Greater).set_span(Span::new(1, 9, 1)),
-                    Token::new(TokenType::GreaterEqual).set_span(Span::new(1, 10, 2)),
-                    Token::new(TokenType::EOF).set_span(Span::new(1, 11, 0)),
+                    Token::new(TokenType::Bang).set_span(Span::new(1, 1, 1)),
+                    Token::new(TokenType::BangEqual).set_span(Span::new(1, 2, 2)),
+                    Token::new(TokenType::EqualEqual).set_span(Span::new(1, 4, 2)),
+                    Token::new(TokenType::Equal).set_span(Span::new(1, 6, 1)),
+                    Token::new(TokenType::Less).set_span(Span::new(1, 7, 1)),
+                    Token::new(TokenType::LessEqual).set_span(Span::new(1, 8, 2)),
+                    Token::new(TokenType::Greater).set_span(Span::new(1, 10, 1)),
+                    Token::new(TokenType::GreaterEqual).set_span(Span::new(1, 11, 2)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 13, 0)),
                 ]
             )
         )
@@ -309,9 +325,9 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 0, 1)),
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 10, 1)),
-                    Token::new(TokenType::EOF).set_span(Span::new(1, 11, 0)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 1, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(2, 1, 1)),
+                    Token::new(TokenType::EOF).set_span(Span::new(2, 2, 0)),
                 ]
             )
         )
@@ -328,9 +344,9 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 0, 1)),
-                    Token::new(TokenType::Plus).set_span(Span::new(2, 5, 1)),
-                    Token::new(TokenType::EOF).set_span(Span::new(2, 6, 0)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 1, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(2, 1, 1)),
+                    Token::new(TokenType::EOF).set_span(Span::new(2, 2, 0)),
                 ]
             )
         )
@@ -347,10 +363,10 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 0, 1)),
-                    token_lit_string!("Example string".to_string()).set_span(Span::new(1, 1, 16)),
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 17, 1)),
-                    Token::new(TokenType::EOF).set_span(Span::new(1, 18, 0)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 1, 1)),
+                    token_lit_string!("Example string".to_string()).set_span(Span::new(1, 2, 16)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 18, 1)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 19, 0)),
                 ]
             )
         )
@@ -367,10 +383,10 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 0, 1)),
-                    token_lit_number!(1232.23_f32).set_span(Span::new(1, 1, 7)),
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 8, 1)),
-                    Token::new(TokenType::EOF).set_span(Span::new(1, 9, 0)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 1, 1)),
+                    token_lit_number!(1232.23_f32).set_span(Span::new(1, 2, 7)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 9, 1)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 10, 0)),
                 ]
             )
         )
@@ -387,12 +403,12 @@ mod lexer_tests {
             format!(
                 "{:?}",
                 vec![
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 0, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 1, 1)),
                     Token::new(TokenType::Identifier)
                         .set_lexeme("abcd1234".to_string())
-                        .set_span(Span::new(1, 1, 8)),
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 9, 1)),
-                    Token::new(TokenType::EOF).set_span(Span::new(1, 10, 0)),
+                        .set_span(Span::new(1, 2, 8)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 10, 1)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 11, 0)),
                 ]
             )
         )
@@ -411,14 +427,14 @@ mod lexer_tests {
                 vec![
                     Token::new(TokenType::Identifier)
                         .set_lexeme("h".to_string())
-                        .set_span(Span::new(1, 0, 1)),
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 1, 1)),
-                    Token::new(TokenType::And).set_span(Span::new(1, 2, 3)),
-                    Token::new(TokenType::Plus).set_span(Span::new(1, 5, 1)),
+                        .set_span(Span::new(1, 1, 1)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 2, 1)),
+                    Token::new(TokenType::And).set_span(Span::new(1, 3, 3)),
+                    Token::new(TokenType::Plus).set_span(Span::new(1, 6, 1)),
                     Token::new(TokenType::Identifier)
                         .set_lexeme("h".to_string())
-                        .set_span(Span::new(1, 6, 1)),
-                    Token::new(TokenType::EOF).set_span(Span::new(1, 7, 0)),
+                        .set_span(Span::new(1, 7, 1)),
+                    Token::new(TokenType::EOF).set_span(Span::new(1, 8, 0)),
                 ]
             )
         )
