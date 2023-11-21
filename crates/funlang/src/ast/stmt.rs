@@ -20,6 +20,9 @@ pub enum Stmt {
 
     #[production(name: Token, initializer: Option<Expr>)]
     Variable(Box<VariableStmt>),
+
+    #[production(statements: Vec<Stmt>)]
+    Block(Box<BlockStmt>),
 }
 
 impl Evaluable<LiteralData> for Stmt {
@@ -59,6 +62,15 @@ impl Evaluable<LiteralData> for Stmt {
                         ),
                     }
                 }
+                Ok(LiteralData::None)
+            }
+            Self::Block(block_statement) => {
+                let mut environment = Environment::new().set_enclosing(environment.clone());
+
+                for statement in &block_statement.statements {
+                    statement.execute(&mut environment)?;
+                }
+
                 Ok(LiteralData::None)
             }
         }

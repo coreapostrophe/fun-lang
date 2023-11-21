@@ -62,6 +62,8 @@ pub enum ParserError {
     UnterminatedGrouping,
     #[message = "statements should be terminated by `;`"]
     UnterminatedStatement,
+    #[message = "block statements should be terminated by `}`"]
+    UnterminatedBlock,
     #[message = "unexpected expression"]
     UnexpectedExpression,
     #[message = "invalid unary operator"]

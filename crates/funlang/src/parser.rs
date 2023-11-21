@@ -3,7 +3,7 @@ use funlang_error::ErrorCascade;
 use crate::{
     ast::{
         expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
-        stmt::{ExpressionStmt, PrintStmt, Stmt, VariableStmt},
+        stmt::{BlockStmt, ExpressionStmt, PrintStmt, Stmt, VariableStmt},
     },
     error,
     errors::ParserError,
@@ -43,7 +43,7 @@ impl Parser {
         token_type: TokenType,
         error: ErrorCascade<ParserError>,
     ) -> Result<(), ErrorCascade<ParserError>> {
-        if self.check(&token_type)? {
+        if self.check(token_type)? {
             self.advance()?;
             Ok(())
         } else {
@@ -72,11 +72,11 @@ impl Parser {
         Ok(())
     }
 
-    fn check(&self, token_type: &TokenType) -> Result<bool, ErrorCascade<ParserError>> {
+    fn check(&self, token_type: TokenType) -> Result<bool, ErrorCascade<ParserError>> {
         if self.is_at_end()? {
             Ok(false)
         } else {
-            Ok(self.peek()?.token_type == *token_type)
+            Ok(self.peek()?.token_type == token_type)
         }
     }
 
@@ -84,7 +84,7 @@ impl Parser {
         let mut result = false;
 
         for token_type in token_types {
-            if self.check(&token_type)? {
+            if self.check(token_type)? {
                 self.advance()?;
                 result = true;
             }
@@ -251,9 +251,26 @@ impl Parser {
         Ok(Stmt::Print(Box::new(PrintStmt { expression })))
     }
 
+    fn block(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        let mut statements: Vec<Stmt> = vec![];
+
+        while !self.check(TokenType::RightBrace)? && !self.is_at_end()? {
+            statements.push(self.declaration()?)
+        }
+
+        self.consume(
+            TokenType::RightBrace,
+            error!(ParserError::UnterminatedBlock),
+        )?;
+
+        Ok(Stmt::Block(Box::new(BlockStmt { statements })))
+    }
+
     fn statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
         if self.r#match(vec![TokenType::Print])? {
             self.print_statement()
+        } else if self.r#match(vec![TokenType::LeftBrace])? {
+            self.block()
         } else {
             self.expression_statement()
         }
