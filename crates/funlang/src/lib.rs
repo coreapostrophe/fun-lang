@@ -1,9 +1,9 @@
+pub mod ast;
+pub mod environment;
 pub mod errors;
+pub mod interpreter;
 pub mod lexer;
+pub mod literal;
 pub mod macros;
 pub mod parser;
 pub mod token;
-pub mod literal;
-pub mod interpreter;
-pub mod ast;
-pub mod environment;

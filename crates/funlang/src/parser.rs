@@ -3,7 +3,7 @@ use funlang_error::ErrorCascade;
 use crate::{
     ast::{
         expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
-        stmt::{ExpressionStmt, Stmt, VariableStmt, PrintStmt},
+        stmt::{ExpressionStmt, PrintStmt, Stmt, VariableStmt},
     },
     error,
     errors::ParserError,

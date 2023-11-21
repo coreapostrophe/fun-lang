@@ -7,57 +7,45 @@ use crate::{
     token_lit_number, token_lit_string,
 };
 
-#[derive(Debug)]
-pub struct Lexer {
-    pub source: Option<String>,
-    start_index: usize,
-    crawled_index: usize,
+pub struct Lexer<'a> {
+    source: Option<&'a str>,
+    current_index: usize,
+    lookahead_index: usize,
     line_number: usize,
     col_number: usize,
 }
 
-impl Lexer {
+impl<'a> Lexer<'a> {
     pub fn new() -> Self {
         Self {
             source: None,
-            start_index: 0,
-            crawled_index: 0,
+            current_index: 0,
+            lookahead_index: 0,
             line_number: 1,
-            col_number: 0,
+            col_number: 1,
         }
     }
 
-    fn clear_state(&mut self) {
-        self.start_index = 0;
-        self.crawled_index = 0;
+    fn reset_state(&mut self) {
+        self.current_index = 0;
+        self.lookahead_index = 0;
         self.line_number = 1;
-        self.col_number = 0;
+        self.col_number = 1;
     }
 
-    fn unwrap_source(&self) -> Result<&String, ErrorCascade<LexerError>> {
-        self.source
-            .as_ref()
-            .ok_or(error!(LexerError::MissingSource))
+    fn unwrap_source(&self) -> Result<&'a str, ErrorCascade<LexerError>> {
+        self.source.ok_or(error!(LexerError::MissingSource))
     }
 
     fn is_at_end(&self) -> Result<bool, ErrorCascade<LexerError>> {
-        Ok(self.crawled_index >= self.unwrap_source()?.len())
+        Ok(self.current_index >= self.unwrap_source()?.len())
     }
 
-    fn advance(&mut self, value: usize) {
-        self.col_number += value;
-        self.crawled_index += value;
-    }
-
-    fn previous(&mut self) -> Result<Option<char>, ErrorCascade<LexerError>> {
-        Ok(self.unwrap_source()?.chars().nth(self.crawled_index - 1))
-    }
-
-    fn peek(&mut self, lookahead_offset: usize) -> Result<char, ErrorCascade<LexerError>> {
+    fn peek(&self, lookahead_offset: usize) -> Result<char, ErrorCascade<LexerError>> {
         match self
             .unwrap_source()?
             .chars()
-            .nth(self.crawled_index + lookahead_offset)
+            .nth(self.current_index + self.lookahead_index + lookahead_offset)
         {
             Some(c) => Ok(c),
             None => Ok('\0'),
@@ -65,20 +53,25 @@ impl Lexer {
     }
 
     fn match_next(&mut self, expected: char) -> Result<bool, ErrorCascade<LexerError>> {
-        let is_match = match self.unwrap_source()?.chars().nth(self.crawled_index + 1) {
+        let is_match = match self
+            .unwrap_source()?
+            .chars()
+            .nth(self.current_index + self.lookahead_index + 1)
+        {
             Some(next_char) => next_char == expected,
             None => false,
         };
         if is_match {
-            self.advance(1);
+            self.lookahead_index += 1;
         }
         Ok(is_match)
     }
 
     fn string(&mut self) -> Result<Token, ErrorCascade<LexerError>> {
         let mut is_closed = false;
+
         'crawler: while !self.is_at_end()? {
-            self.advance(1);
+            self.lookahead_index += 1;
             if self.peek(0)? == '\n' {
                 self.line_number += 1;
             }
@@ -92,41 +85,45 @@ impl Lexer {
             Err(
                 error!(LexerError::UnterminatedString).set_span(ErrorSpan::new(
                     self.line_number,
-                    self.start_index,
-                    1,
+                    self.col_number,
+                    self.lookahead_index,
                 )),
             )
         } else {
-            let literal_value = &self.unwrap_source()?[(self.start_index + 1)..self.crawled_index];
+            let literal_value = &self.unwrap_source()?
+                [(self.current_index + 1)..(self.current_index + self.lookahead_index)];
             Ok(token_lit_string!(literal_value.to_string()))
         }
     }
 
     fn number(&mut self) -> Result<Token, ErrorCascade<LexerError>> {
         while self.peek(1)?.is_digit(10) {
-            self.advance(1);
+            self.lookahead_index += 1;
         }
         if self.peek(1)? == '.' && self.peek(2)?.is_digit(10) {
-            self.advance(2);
+            self.lookahead_index += 2;
             while self.peek(1)?.is_digit(10) {
-                self.advance(1);
+                self.lookahead_index += 1;
             }
         }
-        let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
-        let parsed_literal_value = literal_value
-            .parse::<f32>()
-            .or(Err(error!(LexerError::InvalidCharacterIndex).set_span(
-                ErrorSpan::new(self.line_number, self.start_index, 1),
-            )))?;
+        let literal_value = &self.unwrap_source()?
+            [self.current_index..self.current_index + self.lookahead_index + 1];
+        let parsed_literal_value =
+            literal_value
+                .parse::<f32>()
+                .or(Err(error!(LexerError::InvalidCharacterIndex).set_span(
+                    ErrorSpan::new(self.line_number, self.col_number, self.lookahead_index),
+                )))?;
         Ok(token_lit_number!(parsed_literal_value))
     }
 
     fn identifier(&mut self) -> Result<Token, ErrorCascade<LexerError>> {
         while self.peek(1)?.is_alphanumeric() {
-            self.advance(1);
+            self.lookahead_index += 1;
         }
 
-        let literal_value = &self.unwrap_source()?[self.start_index..self.crawled_index + 1];
+        let literal_value = &self.unwrap_source()?
+            [self.current_index..self.current_index + self.lookahead_index + 1];
         let parsed_keyword = TokenType::get_keyword(literal_value);
 
         let token = match parsed_keyword {
@@ -140,106 +137,109 @@ impl Lexer {
     fn identify_token(&mut self) -> Result<Option<Token>, ErrorCascade<LexerError>> {
         let c = self.peek(0)?;
 
-        let cached_col = self.col_number;
-
-        let token = match c {
-            '(' => Ok(Some(Token::new(TokenType::LeftParen))),
-            ')' => Ok(Some(Token::new(TokenType::RightParen))),
-            '[' => Ok(Some(Token::new(TokenType::LeftBracket))),
-            ']' => Ok(Some(Token::new(TokenType::RightBracket))),
-            '{' => Ok(Some(Token::new(TokenType::LeftBrace))),
-            '}' => Ok(Some(Token::new(TokenType::RightBrace))),
-            '.' => Ok(Some(Token::new(TokenType::Dot))),
-            ',' => Ok(Some(Token::new(TokenType::Comma))),
-            '-' => Ok(Some(Token::new(TokenType::Minus))),
-            '+' => Ok(Some(Token::new(TokenType::Plus))),
-            ';' => Ok(Some(Token::new(TokenType::Semicolon))),
-            '*' => Ok(Some(Token::new(TokenType::Star))),
-            '!' => {
-                if self.match_next('=')? {
-                    Ok(Some(Token::new(TokenType::BangEqual)))
-                } else {
-                    Ok(Some(Token::new(TokenType::Bang)))
-                }
-            }
-            '=' => {
-                if self.match_next('=')? {
-                    Ok(Some(Token::new(TokenType::EqualEqual)))
-                } else {
-                    Ok(Some(Token::new(TokenType::Equal)))
-                }
-            }
-            '<' => {
-                if self.match_next('=')? {
-                    Ok(Some(Token::new(TokenType::LessEqual)))
-                } else {
-                    Ok(Some(Token::new(TokenType::Less)))
-                }
-            }
-            '>' => {
-                if self.match_next('=')? {
-                    Ok(Some(Token::new(TokenType::GreaterEqual)))
-                } else {
-                    Ok(Some(Token::new(TokenType::Greater)))
-                }
-            }
-            '/' => {
-                if self.match_next('/')? {
-                    while self.peek(0)? != '\n' && !self.is_at_end()? {
-                        self.advance(1);
+        let token = {
+            let token_result = match c {
+                '(' => Ok(Some(Token::new(TokenType::LeftParen))),
+                ')' => Ok(Some(Token::new(TokenType::RightParen))),
+                '[' => Ok(Some(Token::new(TokenType::LeftBracket))),
+                ']' => Ok(Some(Token::new(TokenType::RightBracket))),
+                '{' => Ok(Some(Token::new(TokenType::LeftBrace))),
+                '}' => Ok(Some(Token::new(TokenType::RightBrace))),
+                '.' => Ok(Some(Token::new(TokenType::Dot))),
+                ',' => Ok(Some(Token::new(TokenType::Comma))),
+                '-' => Ok(Some(Token::new(TokenType::Minus))),
+                '+' => Ok(Some(Token::new(TokenType::Plus))),
+                ';' => Ok(Some(Token::new(TokenType::Semicolon))),
+                '*' => Ok(Some(Token::new(TokenType::Star))),
+                '!' => {
+                    if self.match_next('=')? {
+                        Ok(Some(Token::new(TokenType::BangEqual)))
+                    } else {
+                        Ok(Some(Token::new(TokenType::Bang)))
                     }
+                }
+                '=' => {
+                    if self.match_next('=')? {
+                        Ok(Some(Token::new(TokenType::EqualEqual)))
+                    } else {
+                        Ok(Some(Token::new(TokenType::Equal)))
+                    }
+                }
+                '<' => {
+                    if self.match_next('=')? {
+                        Ok(Some(Token::new(TokenType::LessEqual)))
+                    } else {
+                        Ok(Some(Token::new(TokenType::Less)))
+                    }
+                }
+                '>' => {
+                    if self.match_next('=')? {
+                        Ok(Some(Token::new(TokenType::GreaterEqual)))
+                    } else {
+                        Ok(Some(Token::new(TokenType::Greater)))
+                    }
+                }
+                '/' => {
+                    if self.match_next('/')? {
+                        while self.peek(1)? != '\n' && !self.is_at_end()? {
+                            self.lookahead_index += 1;
+                        }
+                        Ok(None)
+                    } else {
+                        Ok(Some(Token::new(TokenType::Slash)))
+                    }
+                }
+                ' ' => Ok(None),
+                '\r' => Ok(None),
+                '\t' => Ok(None),
+                '\n' => {
                     self.line_number += 1;
+                    self.col_number = 0;
                     Ok(None)
-                } else {
-                    Ok(Some(Token::new(TokenType::Slash)))
                 }
-            }
-            ' ' => Ok(None),
-            '\r' => Ok(None),
-            '\t' => Ok(None),
-            '\n' => {
-                self.line_number += 1;
-                Ok(None)
-            }
-            '"' => Ok(Some(self.string()?)),
-            c => {
-                if c.is_digit(10) {
-                    Ok(Some(self.number()?))
-                } else if c.is_alphabetic() {
-                    Ok(Some(self.identifier()?))
-                } else {
-                    Err(error!(LexerError::UnexpectedCharacter(c.to_string())))
+                '"' => Ok(Some(self.string()?)),
+                c => {
+                    if c.is_digit(10) {
+                        Ok(Some(self.number()?))
+                    } else if c.is_alphabetic() {
+                        Ok(Some(self.identifier()?))
+                    } else {
+                        Err(error!(LexerError::UnexpectedCharacter(c.to_string())))
+                    }
                 }
-            }
+            };
+
+            self.lookahead_index += 1;
+
+            token_result
         }?;
 
-        self.advance(1);
-
-        if let Some(previous) = self.previous()? {
-            if previous == '\n' {
-                self.col_number = 0;
-            }
-        }
-
-        match token {
-            Some(token) => Ok(Some(token.set_span(Span::new(
+        let token = match token {
+            Some(token) => Some(token.set_span(Span::new(
                 self.line_number,
-                cached_col + 1,
-                self.crawled_index - self.start_index,
-            )))),
-            None => Ok(None),
+                self.col_number,
+                self.lookahead_index,
+            ))),
+            None => None,
+        };
+
+        if self.peek(0)? != '\n' {
+            self.col_number += self.lookahead_index;
         }
+
+        self.current_index += self.lookahead_index;
+        self.lookahead_index = 0;
+
+        Ok(token)
     }
 
-    pub fn tokenize(&mut self, source: &str) -> Result<Vec<Token>, ErrorCascade<LexerError>> {
-        self.clear_state();
-        self.source = Some(source.to_string());
+    pub fn tokenize(&mut self, source: &'a str) -> Result<Vec<Token>, ErrorCascade<LexerError>> {
+        self.reset_state();
+        self.source = Some(source);
 
         let mut tokens: Vec<Token> = vec![];
 
         while !self.is_at_end()? {
-            self.start_index = self.crawled_index;
-
             if let Some(token) = self.identify_token()? {
                 tokens.push(token);
             }
@@ -247,7 +247,7 @@ impl Lexer {
 
         tokens.push(Token::new(TokenType::EOF).set_span(Span::new(
             self.line_number,
-            self.col_number + 1,
+            self.col_number,
             0,
         )));
 
