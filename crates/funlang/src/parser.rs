@@ -335,7 +335,27 @@ mod parser_tests {
         let mut parser = Parser::new();
         let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
+    }
 
-        // println!("\n{:#?}", parser_result.unwrap());
+    #[test]
+    fn parses_print_statments() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("print 6;");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+    }
+
+    #[test]
+    fn parses_block_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("let a = 1; a = 2; print a; { a = 3; print a; }");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
     }
 }
