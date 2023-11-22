@@ -3,7 +3,7 @@ use funlang_error::ErrorCascade;
 use crate::{
     ast::{
         expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
-        stmt::{BlockStmt, ExpressionStmt, PrintStmt, Stmt, VariableStmt},
+        stmt::{BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VariableStmt},
     },
     error,
     errors::ParserError,
@@ -251,7 +251,7 @@ impl Parser {
         Ok(Stmt::Print(Box::new(PrintStmt { expression })))
     }
 
-    fn block(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+    fn block_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
         let mut statements: Vec<Stmt> = vec![];
 
         while !self.check(TokenType::RightBrace)? && !self.is_at_end()? {
@@ -266,11 +266,33 @@ impl Parser {
         Ok(Stmt::Block(Box::new(BlockStmt { statements })))
     }
 
+    fn if_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        let condition = self.expression()?;
+
+        self.consume(TokenType::LeftBrace, error!(ParserError::ExpectedIfBlock))?;
+
+        let then_branch = self.block_statement()?;
+
+        let else_branch = if self.r#match(vec![TokenType::Else])? {
+            Some(self.statement()?)
+        } else {
+            None
+        };
+
+        Ok(Stmt::If(Box::new(IfStmt {
+            condition,
+            then_branch,
+            else_branch,
+        })))
+    }
+
     fn statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
         if self.r#match(vec![TokenType::Print])? {
             self.print_statement()
         } else if self.r#match(vec![TokenType::LeftBrace])? {
-            self.block()
+            self.block_statement()
+        } else if self.r#match(vec![TokenType::If])? {
+            self.if_statement()
         } else {
             self.expression_statement()
         }
@@ -352,6 +374,17 @@ mod parser_tests {
     fn parses_block_statements() {
         let mut lexer = Lexer::new();
         let lexer_result = lexer.tokenize("let a = 1; a = 2; print a; { a = 3; print a; }");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+    }
+
+    #[test]
+    fn parses_if_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("if 6 == 10 { print 1; } else { print 2; }");
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();

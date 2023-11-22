@@ -94,7 +94,7 @@ mod interpreter_tests {
     fn interprets_block_statements() {
         let mut lexer = Lexer::new();
         let lexer_result = lexer.tokenize(
-            r"
+            "
         let a = 6;
         a = 12; 
         {
@@ -102,6 +102,29 @@ mod interpreter_tests {
             print a;
         }
         print a;
+        ",
+        );
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+
+        let mut interpreter = Interpreter::new();
+        assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+    }
+
+    #[test]
+    fn interprets_if_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize(
+            "
+        let a = 6;
+        if a = 12 {
+            print \"a is 12\";
+        } else {
+            print \"a is 6\";
+        }
         ",
         );
         assert!(lexer_result.is_ok());

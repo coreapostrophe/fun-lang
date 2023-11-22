@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    fmt::Display,
     ops::{Add, Div, Mul, Sub},
 };
 
@@ -29,6 +30,14 @@ impl LiteralData {
             }
             LiteralData::None => Ok(0.0),
         }
+    }
+
+    pub fn is_truthy(&self) -> Result<bool, ErrorCascade<InterpreterError>> {
+        Ok(self.parse_num()? != 0.0)
+    }
+
+    pub fn is_falsy(&self) -> Result<bool, ErrorCascade<InterpreterError>> {
+        Ok(!self.is_truthy()?)
     }
 }
 
@@ -126,6 +135,17 @@ impl PartialOrd for LiteralData {
                 _ => None,
             },
             _ => None,
+        }
+    }
+}
+
+impl Display for LiteralData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            LiteralData::Bool(bool_value) => write!(f, "{}", bool_value),
+            LiteralData::String(string_value) => write!(f, "{}", string_value),
+            LiteralData::Number(number_balue) => write!(f, "{}", number_balue),
+            LiteralData::None => write!(f, "None"),
         }
     }
 }

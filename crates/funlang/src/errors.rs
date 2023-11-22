@@ -74,6 +74,8 @@ pub enum ParserError {
     MissingSpan,
     #[message = "expected an `=` symbol in variable declaration"]
     ExpectedEqual,
+    #[message = "expected a block statement after the `if` condition"]
+    ExpectedIfBlock,
     #[message = "expected an identifier name"]
     ExpectedIdentifier,
     #[message = "expression before the `=` symbol should be a valid variable"]

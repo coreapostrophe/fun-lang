@@ -23,6 +23,9 @@ pub enum Stmt {
 
     #[production(statements: Vec<Stmt>)]
     Block(Box<BlockStmt>),
+
+    #[production(condition: Expr, then_branch: Stmt, else_branch: Option<Stmt>)]
+    If(Box<IfStmt>),
 }
 
 impl Evaluable<LiteralData> for Stmt {
@@ -41,7 +44,7 @@ impl Evaluable<LiteralData> for Stmt {
             Self::Print(print_statement) => {
                 match print_statement.expression.evaluate(environment) {
                     Ok(evaluated_value) => {
-                        println!("{:?}", evaluated_value);
+                        println!("{}", evaluated_value);
                         Ok(evaluated_value)
                     }
                     Err(error) => Err(error!(InterpreterError::EvaluatationException)
@@ -71,6 +74,16 @@ impl Evaluable<LiteralData> for Stmt {
                     statement.execute(&mut environment)?;
                 }
 
+                Ok(LiteralData::None)
+            }
+            Self::If(if_statement) => {
+                if if_statement.condition.evaluate(environment)?.is_truthy()? {
+                    if_statement.then_branch.execute(environment)?;
+                } else {
+                    if let Some(else_branch) = &if_statement.else_branch {
+                        else_branch.execute(environment)?;
+                    }
+                }
                 Ok(LiteralData::None)
             }
         }
