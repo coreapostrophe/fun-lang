@@ -31,6 +31,9 @@ pub enum Expr {
 
     #[production(name: Token)]
     Variable(Box<VariableExpr>),
+
+    #[production(left: Expr, operator: Token, right: Expr)]
+    Logical(Box<LogicalExpr>),
 }
 
 impl Evaluable<LiteralData> for Expr {
@@ -45,6 +48,26 @@ impl Evaluable<LiteralData> for Expr {
             Expr::Grouping(grouping_expr) => grouping_expr.evaluate(environment),
             Expr::Variable(variable_expr) => variable_expr.evaluate(environment),
             Expr::Assign(assignment_expr) => assignment_expr.evaluate(environment),
+            Expr::Logical(logical_expr) => logical_expr.evaluate(environment),
+        }
+    }
+}
+
+impl Evaluable<LiteralData> for LogicalExpr {
+    fn evaluate(
+        &self,
+        environment: &mut Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+        match &self.operator.token_type {
+            TokenType::Or => Ok(LiteralData::Bool(
+                self.left.evaluate(environment)?.is_truthy()?
+                    || self.right.evaluate(environment)?.is_truthy()?,
+            )),
+            TokenType::And => Ok(LiteralData::Bool(
+                self.left.evaluate(environment)?.is_truthy()?
+                    && self.right.evaluate(environment)?.is_truthy()?,
+            )),
+            _ => Ok(LiteralData::Bool(false)),
         }
     }
 }

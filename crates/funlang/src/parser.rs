@@ -2,7 +2,7 @@ use funlang_error::ErrorCascade;
 
 use crate::{
     ast::{
-        expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr},
+        expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr, LogicalExpr},
         stmt::{BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VariableStmt},
     },
     error,
@@ -211,8 +211,24 @@ impl Parser {
         Ok(expr)
     }
 
+    fn logical(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
+        let mut expr: Expr = self.equality()?;
+
+        while self.r#match(vec![TokenType::And, TokenType::Or])? {
+            let operator = self.previous()?;
+            let right = self.equality()?;
+            expr = Expr::Logical(Box::new(LogicalExpr {
+                left: expr,
+                operator,
+                right,
+            }))
+        }
+
+        Ok(expr)
+    }
+
     fn assignment(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
-        let expr = self.equality()?;
+        let expr = self.logical()?;
 
         if self.r#match(vec![TokenType::Equal])? {
             let value = self.assignment()?;
@@ -385,6 +401,17 @@ mod parser_tests {
     fn parses_if_statements() {
         let mut lexer = Lexer::new();
         let lexer_result = lexer.tokenize("if 6 == 10 { print 1; } else { print 2; }");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+    }
+
+    #[test]
+    fn parses_logical_expressions() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("let a = 2; if 6 == 10 or a == 2 { print 1; } else { print 2; }");
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();

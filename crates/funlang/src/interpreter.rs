@@ -120,10 +120,10 @@ mod interpreter_tests {
         let lexer_result = lexer.tokenize(
             "
         let a = 6;
-        if a = 12 {
-            print \"a is 12\";
+        if a == 12 or a == 6 {
+            print \"a is 12 or 6\";
         } else {
-            print \"a is 6\";
+            print \"a is not 12 or 6\";
         }
         ",
         );
