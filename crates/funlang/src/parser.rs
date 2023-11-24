@@ -2,8 +2,11 @@ use funlang_error::ErrorCascade;
 
 use crate::{
     ast::{
-        expr::{AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr, VariableExpr, LogicalExpr},
-        stmt::{BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VariableStmt},
+        expr::{
+            AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr, UnaryExpr,
+            VariableExpr,
+        },
+        stmt::{BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VariableStmt, WhileStmt},
     },
     error,
     errors::ParserError,
@@ -302,6 +305,16 @@ impl Parser {
         })))
     }
 
+    fn while_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        let condition = self.expression()?;
+
+        self.consume(TokenType::LeftBrace, error!(ParserError::ExpectedIfBlock))?;
+
+        let body = self.block_statement()?;
+
+        Ok(Stmt::While(Box::new(WhileStmt { condition, body })))
+    }
+
     fn statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
         if self.r#match(vec![TokenType::Print])? {
             self.print_statement()
@@ -309,6 +322,8 @@ impl Parser {
             self.block_statement()
         } else if self.r#match(vec![TokenType::If])? {
             self.if_statement()
+        } else if self.r#match(vec![TokenType::While])? {
+            self.while_statement()
         } else {
             self.expression_statement()
         }
@@ -411,7 +426,20 @@ mod parser_tests {
     #[test]
     fn parses_logical_expressions() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("let a = 2; if 6 == 10 or a == 2 { print 1; } else { print 2; }");
+        let lexer_result =
+            lexer.tokenize("let a = 2; if 6 == 10 or a == 2 { print 1; } else { print 2; }");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+    }
+
+    #[test]
+    fn parses_while_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result =
+            lexer.tokenize("let a = 0; while a != 10 { a = a + 1; print a; }");
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();

@@ -136,4 +136,27 @@ mod interpreter_tests {
         let mut interpreter = Interpreter::new();
         assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
     }
+
+    #[test]
+    fn interprets_while_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize(
+            "
+            let a = 0; 
+            while a != 10 
+            { 
+                a = a + 1; 
+                print a; 
+            }
+            ",
+        );
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+
+        let mut interpreter = Interpreter::new();
+        assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+    }
 }

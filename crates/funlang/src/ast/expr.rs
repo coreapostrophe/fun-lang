@@ -82,17 +82,13 @@ impl Evaluable<LiteralData> for AssignExpr {
             .clone()
             .lexeme
             .ok_or(error!(InterpreterError::MissingIdentifier))?;
-
-        let value_expression = environment
-            .variable(&name)
-            .ok_or(error!(InterpreterError::InvalidIdentifier(name.clone())))?;
-        let evaluated_value = value_expression.evaluate(environment)?;
+        let value = self.value.clone().evaluate(environment)?;
 
         environment
             .assign(
                 &name,
                 Expr::Literal(Box::new(LiteralExpr {
-                    literal: evaluated_value,
+                    literal: value,
                 })),
             )
             .or(Err(error!(InterpreterError::InvalidIdentifier(

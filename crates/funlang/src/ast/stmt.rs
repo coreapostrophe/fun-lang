@@ -5,7 +5,10 @@ use crate::{
 use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
-use super::{traits::{Evaluable, Executable}, expr::LiteralExpr};
+use super::{
+    expr::LiteralExpr,
+    traits::{Evaluable, Executable},
+};
 
 #[derive(Ast, Debug, Clone)]
 pub enum Stmt {
@@ -23,26 +26,23 @@ pub enum Stmt {
 
     #[production(condition: Expr, then_branch: Stmt, else_branch: Option<Stmt>)]
     If(Box<IfStmt>),
+
+    #[production(condition: Expr, body: Stmt)]
+    While(Box<WhileStmt>),
 }
 
-impl Evaluable<LiteralData> for Stmt {
-    fn evaluate(
-        &self,
-        environment: &mut Environment,
-    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+impl Executable for Stmt {
+    fn execute(&self, environment: &mut Environment) -> Result<(), ErrorCascade<InterpreterError>> {
         match self {
             Self::Expression(expression_statement) => {
-                match expression_statement.expression.evaluate(environment) {
-                    Ok(evaluated_value) => Ok(evaluated_value),
-                    Err(error) => Err(error!(InterpreterError::EvaluatationException)
-                        .set_embedded_error(Box::new(error))),
-                }
+                expression_statement.expression.evaluate(environment)?;
+                Ok(())
             }
             Self::Print(print_statement) => {
                 match print_statement.expression.evaluate(environment) {
                     Ok(evaluated_value) => {
                         println!("{}", evaluated_value);
-                        Ok(evaluated_value)
+                        Ok(())
                     }
                     Err(error) => Err(error!(InterpreterError::EvaluatationException)
                         .set_embedded_error(Box::new(error))),
@@ -62,7 +62,7 @@ impl Evaluable<LiteralData> for Stmt {
                         ),
                     }
                 }
-                Ok(LiteralData::None)
+                Ok(())
             }
             Self::Block(block_statement) => {
                 let mut environment = environment.create_scope();
@@ -70,8 +70,7 @@ impl Evaluable<LiteralData> for Stmt {
                 for statement in &block_statement.statements {
                     statement.execute(&mut environment)?;
                 }
-
-                Ok(LiteralData::None)
+                Ok(())
             }
             Self::If(if_statement) => {
                 if if_statement.condition.evaluate(environment)?.is_truthy()? {
@@ -81,19 +80,17 @@ impl Evaluable<LiteralData> for Stmt {
                         else_branch.execute(environment)?;
                     }
                 }
-                Ok(LiteralData::None)
+                Ok(())
             }
-        }
-    }
-}
-
-impl Executable for Stmt {
-    fn execute(&self, environment: &mut Environment) -> Result<(), ErrorCascade<InterpreterError>> {
-        match self.evaluate(environment) {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                Err(error!(InterpreterError::ExecutionException)
-                    .set_embedded_error(Box::new(error)))
+            Self::While(while_statement) => {
+                while while_statement
+                    .condition
+                    .evaluate(environment)?
+                    .is_truthy()?
+                {
+                    while_statement.body.execute(environment)?;
+                }
+                Ok(())
             }
         }
     }
