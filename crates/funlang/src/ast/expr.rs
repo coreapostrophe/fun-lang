@@ -2,11 +2,12 @@ use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
 use crate::{
+    environment::Environment,
     error,
     errors::InterpreterError,
     literal::LiteralData,
     parse_string_to_num,
-    token::{Token, TokenType}, environment::Environment,
+    token::{Token, TokenType},
 };
 
 use super::traits::Evaluable;
@@ -74,39 +75,48 @@ impl Evaluable<LiteralData> for LogicalExpr {
 impl Evaluable<LiteralData> for AssignExpr {
     fn evaluate(
         &self,
-        _environment: &mut Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
-        // let name = self
-        //     .name
-        //     .clone()
-        //     .lexeme
-        //     .ok_or(error!(InterpreterError::MissingIdentifier))?;
-        // let variable = environment
-        //     .mut_variable(&name)
-        //     .ok_or(error!(InterpreterError::InvalidIdentifier(name)))?;
-        // *variable = self.value.clone();
+        let name = self
+            .name
+            .clone()
+            .lexeme
+            .ok_or(error!(InterpreterError::MissingIdentifier))?;
 
-        // Ok(LiteralData::None)
-        todo!()
+        let value_expression = environment
+            .variable(&name)
+            .ok_or(error!(InterpreterError::InvalidIdentifier(name.clone())))?;
+        let evaluated_value = value_expression.evaluate(environment)?;
+
+        environment
+            .assign(
+                &name,
+                Expr::Literal(Box::new(LiteralExpr {
+                    literal: evaluated_value,
+                })),
+            )
+            .or(Err(error!(InterpreterError::InvalidIdentifier(
+                name.clone()
+            ))))?;
+
+        Ok(LiteralData::None)
     }
 }
 
 impl Evaluable<LiteralData> for VariableExpr {
     fn evaluate(
         &self,
-        _environment: &mut Environment,
+        environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
-        // let identifier = self
-        //     .name
-        //     .lexeme
-        //     .clone()
-        //     .ok_or(error!(InterpreterError::MissingIdentifier))?;
-        // let expression = environment
-        //     .variable(&identifier)
-        //     .ok_or(error!(InterpreterError::InvalidIdentifier(identifier)))?
-        //     .clone();
-        // Ok(expression.evaluate(environment)?)
-        todo!()
+        let identifier = self
+            .name
+            .lexeme
+            .clone()
+            .ok_or(error!(InterpreterError::MissingIdentifier))?;
+        let expression = environment
+            .variable(&identifier)
+            .ok_or(error!(InterpreterError::InvalidIdentifier(identifier)))?;
+        Ok(expression.evaluate(environment)?)
     }
 }
 
