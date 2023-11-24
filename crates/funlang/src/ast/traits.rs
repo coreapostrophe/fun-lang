@@ -6,6 +6,6 @@ pub trait Evaluable<R> {
     fn evaluate(&self, environment: &mut Environment) -> Result<R, ErrorCascade<InterpreterError>>;
 }
 
-pub trait Executable {
-    fn execute(&self, environment: &mut Environment) -> Result<(), ErrorCascade<InterpreterError>>;
+pub trait Executable<R> {
+    fn execute(&self, environment: &mut Environment) -> Result<R, ErrorCascade<InterpreterError>>;
 }

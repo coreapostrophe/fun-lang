@@ -23,7 +23,7 @@ impl Interpreter {
         statements: Vec<Stmt>,
     ) -> Result<(), ErrorCascade<InterpreterError>> {
         for statement in statements {
-            statement.execute(&mut self.environment)?
+            statement.execute(&mut self.environment)?;
         }
         Ok(())
     }
@@ -154,6 +154,21 @@ mod interpreter_tests {
 
         let mut parser = Parser::new();
         let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+
+        let mut interpreter = Interpreter::new();
+        assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+    }
+
+    #[test]
+    fn interprets_for_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("for let a = 0; a < 10; a = a + 1 { print a; }");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
         assert!(parser_result.is_ok());
 
         let mut interpreter = Interpreter::new();

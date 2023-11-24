@@ -308,11 +308,57 @@ impl Parser {
     fn while_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
         let condition = self.expression()?;
 
-        self.consume(TokenType::LeftBrace, error!(ParserError::ExpectedIfBlock))?;
+        self.consume(
+            TokenType::LeftBrace,
+            error!(ParserError::ExpectedWhileBlock),
+        )?;
 
         let body = self.block_statement()?;
 
         Ok(Stmt::While(Box::new(WhileStmt { condition, body })))
+    }
+
+    fn for_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        let for_initializer = if self.r#match(vec![TokenType::Let])? {
+            Some(self.var_declaration()?)
+        } else {
+            Some(self.expression_statement()?)
+        };
+
+        let for_condition = self.expression()?;
+
+        self.consume(
+            TokenType::Semicolon,
+            error!(ParserError::ExpectedLoopConditionTermination),
+        )?;
+
+        let for_increment = self.expression()?;
+
+        self.consume(TokenType::LeftBrace, error!(ParserError::ExpectedForBlock))?;
+
+        let for_body = self.block_statement()?;
+
+        let mut block_body: Vec<Stmt> = Vec::new();
+
+        if let Some(for_initializer) = for_initializer {
+            block_body.push(for_initializer);
+        };
+
+        block_body.push(Stmt::While(Box::new(WhileStmt {
+            condition: for_condition,
+            body: Stmt::Block(Box::new(BlockStmt {
+                statements: Vec::from([
+                    Stmt::Expression(Box::new(ExpressionStmt {
+                        expression: for_increment,
+                    })),
+                    for_body,
+                ]),
+            })),
+        })));
+
+        Ok(Stmt::Block(Box::new(BlockStmt {
+            statements: block_body,
+        })))
     }
 
     fn statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
@@ -324,6 +370,8 @@ impl Parser {
             self.if_statement()
         } else if self.r#match(vec![TokenType::While])? {
             self.while_statement()
+        } else if self.r#match(vec![TokenType::For])? {
+            self.for_statement()
         } else {
             self.expression_statement()
         }
@@ -438,8 +486,18 @@ mod parser_tests {
     #[test]
     fn parses_while_statements() {
         let mut lexer = Lexer::new();
-        let lexer_result =
-            lexer.tokenize("let a = 0; while a != 10 { a = a + 1; print a; }");
+        let lexer_result = lexer.tokenize("let a = 0; while a != 10 { a = a + 1; print a; }");
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+    }
+
+    #[test]
+    fn parses_for_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize("for let a = 0; a < 10; a = a + 1 { print a; }");
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();

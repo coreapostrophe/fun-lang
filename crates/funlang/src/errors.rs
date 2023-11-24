@@ -82,8 +82,14 @@ pub enum ParserError {
     ExpectedEqual,
     #[message = "expected a block statement after the `if` condition"]
     ExpectedIfBlock,
+    #[message = "expected a block statement after the `while` condition"]
+    ExpectedWhileBlock,
+    #[message = "expected a block statement after the `for` condition"]
+    ExpectedForBlock,
     #[message = "expected an identifier name"]
     ExpectedIdentifier,
+    #[message = "expected a `;` after the loop condition"]
+    ExpectedLoopConditionTermination,
     #[message = "expression before the `=` symbol should be a valid variable"]
     InvalidAssignmentTarget,
     #[message = "variable with identifier `{}` does not exist"]

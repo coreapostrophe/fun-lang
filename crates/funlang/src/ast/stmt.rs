@@ -31,18 +31,18 @@ pub enum Stmt {
     While(Box<WhileStmt>),
 }
 
-impl Executable for Stmt {
-    fn execute(&self, environment: &mut Environment) -> Result<(), ErrorCascade<InterpreterError>> {
+impl Executable<LiteralData> for Stmt {
+    fn execute(&self, environment: &mut Environment) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
             Self::Expression(expression_statement) => {
-                expression_statement.expression.evaluate(environment)?;
-                Ok(())
+                let evaluated_value = expression_statement.expression.evaluate(environment)?;
+                Ok(evaluated_value)
             }
             Self::Print(print_statement) => {
                 match print_statement.expression.evaluate(environment) {
                     Ok(evaluated_value) => {
                         println!("{}", evaluated_value);
-                        Ok(())
+                        Ok(evaluated_value)
                     }
                     Err(error) => Err(error!(InterpreterError::EvaluatationException)
                         .set_embedded_error(Box::new(error))),
@@ -62,15 +62,15 @@ impl Executable for Stmt {
                         ),
                     }
                 }
-                Ok(())
+                Ok(LiteralData::None)
             }
             Self::Block(block_statement) => {
                 let mut environment = environment.create_scope();
 
                 for statement in &block_statement.statements {
                     statement.execute(&mut environment)?;
-                }
-                Ok(())
+                };
+                Ok(LiteralData::None)
             }
             Self::If(if_statement) => {
                 if if_statement.condition.evaluate(environment)?.is_truthy()? {
@@ -80,7 +80,7 @@ impl Executable for Stmt {
                         else_branch.execute(environment)?;
                     }
                 }
-                Ok(())
+                Ok(LiteralData::None)
             }
             Self::While(while_statement) => {
                 while while_statement
@@ -90,7 +90,7 @@ impl Executable for Stmt {
                 {
                     while_statement.body.execute(environment)?;
                 }
-                Ok(())
+                Ok(LiteralData::None)
             }
         }
     }
