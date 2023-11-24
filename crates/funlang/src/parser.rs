@@ -452,7 +452,17 @@ mod parser_tests {
     #[test]
     fn parses_block_statements() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("let a = 1; a = 2; print a; { a = 3; print a; }");
+        let lexer_result = lexer.tokenize(
+            "
+            let a = 1; 
+            a = 2; 
+            print a; 
+            { 
+                a = 3; 
+                print a; 
+            }
+            ",
+        );
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
@@ -463,7 +473,15 @@ mod parser_tests {
     #[test]
     fn parses_if_statements() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("if 6 == 10 { print 1; } else { print 2; }");
+        let lexer_result = lexer.tokenize(
+            "
+            if 6 == 10 { 
+                print 1; 
+            } else {
+                print 2; 
+            }
+            ",
+        );
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
@@ -474,8 +492,16 @@ mod parser_tests {
     #[test]
     fn parses_logical_expressions() {
         let mut lexer = Lexer::new();
-        let lexer_result =
-            lexer.tokenize("let a = 2; if 6 == 10 or a == 2 { print 1; } else { print 2; }");
+        let lexer_result = lexer.tokenize(
+            "
+            let a = 2; 
+            if 6 == 10 or a == 2 { 
+                print 1; 
+            } else { 
+                print 2; 
+            }
+            ",
+        );
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
@@ -486,7 +512,15 @@ mod parser_tests {
     #[test]
     fn parses_while_statements() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("let a = 0; while a != 10 { a = a + 1; print a; }");
+        let lexer_result = lexer.tokenize(
+            "
+            let a = 0; 
+            while a != 10 { 
+                a = a + 1; 
+                print a; 
+            }
+            ",
+        );
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
@@ -497,7 +531,13 @@ mod parser_tests {
     #[test]
     fn parses_for_statements() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("for let a = 0; a < 10; a = a + 1 { print a; }");
+        let lexer_result = lexer.tokenize(
+            "
+            for let a = 0; a < 10; a = a + 1 { 
+                print a; 
+            }
+            ",
+        );
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();

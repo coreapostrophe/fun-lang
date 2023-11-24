@@ -79,7 +79,12 @@ mod interpreter_tests {
     #[test]
     fn interprets_variable_assignments() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("let a = 6; a = 12;");
+        let lexer_result = lexer.tokenize(
+            "
+            let a = 6; 
+            a = 12;
+            ",
+        );
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
@@ -95,14 +100,14 @@ mod interpreter_tests {
         let mut lexer = Lexer::new();
         let lexer_result = lexer.tokenize(
             "
-        let a = 6;
-        a = 12; 
-        {
-            a = 18;
+            let a = 6;
+            a = 12; 
+            {
+                a = 18;
+                print a;
+            }
             print a;
-        }
-        print a;
-        ",
+            ",
         );
         assert!(lexer_result.is_ok());
 
@@ -119,13 +124,13 @@ mod interpreter_tests {
         let mut lexer = Lexer::new();
         let lexer_result = lexer.tokenize(
             "
-        let a = 6;
-        if a == 12 or a == 6 {
-            print \"a is 12 or 6\";
-        } else {
-            print \"a is not 12 or 6\";
-        }
-        ",
+            let a = 6;
+            if a == 12 or a == 6 {
+                print \"a is 12 or 6\";
+            } else {
+                print \"a is not 12 or 6\";
+            }
+            ",
         );
         assert!(lexer_result.is_ok());
 
@@ -163,7 +168,13 @@ mod interpreter_tests {
     #[test]
     fn interprets_for_statements() {
         let mut lexer = Lexer::new();
-        let lexer_result = lexer.tokenize("for let a = 0; a < 10; a = a + 1 { print a; }");
+        let lexer_result = lexer.tokenize(
+            "
+            for let a = 0; a < 10; a = a + 1 { 
+                print a; 
+            }
+            ",
+        );
         assert!(lexer_result.is_ok());
 
         let mut parser = Parser::new();
