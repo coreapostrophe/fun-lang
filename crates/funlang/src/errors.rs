@@ -1,6 +1,12 @@
 use funlang_derive::Error;
 
 #[derive(Error)]
+pub enum EnvironmentError {
+    #[message = "variable being fetched does not exist"]
+    InvalidVariable
+}
+
+#[derive(Error)]
 pub enum InterpreterError {
     #[message = "something went wrong while attempting to execute statement"]
     ExecutionException,

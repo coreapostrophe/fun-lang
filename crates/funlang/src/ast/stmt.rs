@@ -5,10 +5,7 @@ use crate::{
 use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
 
-use super::{
-    expr::LiteralExpr,
-    traits::{Evaluable, Executable},
-};
+use super::traits::{Evaluable, Executable};
 
 #[derive(Ast, Debug, Clone)]
 pub enum Stmt {
@@ -52,29 +49,34 @@ impl Evaluable<LiteralData> for Stmt {
                 }
             }
             Self::Variable(variable_statement) => {
-                if let Some(name) = variable_statement.name.lexeme.as_ref() {
+                if let Some(_name) = variable_statement.name.lexeme.as_ref() {
                     match variable_statement.as_ref().initializer {
-                        Some(ref initializer) => {
-                            environment.define(&name, initializer.clone());
+                        Some(ref _initializer) => {
+                            // environment.define(&name, initializer.clone());
+                            todo!()
                         }
-                        None => environment.define(
-                            &name,
-                            Expr::Literal(Box::new(LiteralExpr {
-                                literal: LiteralData::None,
-                            })),
-                        ),
+                        None => {
+                            // environment.define(
+                            //     &name,
+                            //     Expr::Literal(Box::new(LiteralExpr {
+                            //         literal: LiteralData::None,
+                            //     })),
+                            // )
+                            todo!()
+                        }
                     }
                 }
                 Ok(LiteralData::None)
             }
-            Self::Block(block_statement) => {
-                let mut environment = Environment::new().set_enclosing(environment.clone());
+            Self::Block(_block_statement) => {
+                // let mut environment = Environment::new().set_enclosing(environment.clone());
 
-                for statement in &block_statement.statements {
-                    statement.execute(&mut environment)?;
-                }
+                // for statement in &block_statement.statements {
+                //     statement.execute(&mut environment)?;
+                // }
 
-                Ok(LiteralData::None)
+                // Ok(LiteralData::None)
+                todo!()
             }
             Self::If(if_statement) => {
                 if if_statement.condition.evaluate(environment)?.is_truthy()? {
