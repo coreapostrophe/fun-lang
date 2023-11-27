@@ -3,10 +3,13 @@ use funlang_error::ErrorCascade;
 use crate::{
     ast::{
         expr::{
-            AssignExpr, BinaryExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr, UnaryExpr,
-            VariableExpr,
+            AssignExpr, BinaryExpr, CallExpr, Expr, GroupingExpr, LiteralExpr, LogicalExpr,
+            UnaryExpr, VariableExpr,
         },
-        stmt::{BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VariableStmt, WhileStmt},
+        stmt::{
+            BlockStmt, ExpressionStmt, FunctionStmt, IfStmt, PrintStmt, Stmt, VariableStmt,
+            WhileStmt,
+        },
     },
     error,
     errors::ParserError,
@@ -45,10 +48,10 @@ impl Parser {
         &mut self,
         token_type: TokenType,
         error: ErrorCascade<ParserError>,
-    ) -> Result<(), ErrorCascade<ParserError>> {
+    ) -> Result<Token, ErrorCascade<ParserError>> {
         if self.check(token_type)? {
             self.advance()?;
-            Ok(())
+            self.previous()
         } else {
             Err(error)
         }
@@ -135,13 +138,50 @@ impl Parser {
         }
     }
 
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr, ErrorCascade<ParserError>> {
+        let mut arguments: Vec<Expr> = Vec::new();
+
+        if !self.check(TokenType::RightParen)? {
+            'arguments: loop {
+                if arguments.len() >= 255 {
+                    Err(error!(ParserError::MaxArguments))?;
+                }
+                arguments.push(self.expression()?);
+                if !self.r#match(vec![TokenType::Comma])? {
+                    break 'arguments;
+                }
+            }
+        };
+
+        let paren = self.consume(
+            TokenType::RightParen,
+            error!(ParserError::ExpectedArguments),
+        )?;
+
+        Ok(Expr::Call(Box::new(CallExpr {
+            callee,
+            paren,
+            arguments,
+        })))
+    }
+
+    fn call(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
+        let mut expr = self.primary()?;
+
+        while self.r#match(vec![TokenType::LeftParen])? {
+            expr = self.finish_call(expr)?;
+        }
+
+        Ok(expr)
+    }
+
     fn unary(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
         if self.r#match(vec![TokenType::Bang, TokenType::Minus])? {
             let operator = self.previous()?;
             let right = self.unary()?;
             Ok(Expr::Unary(Box::new(UnaryExpr { operator, right })))
         } else {
-            Ok(self.primary()?)
+            self.call()
         }
     }
 
@@ -249,7 +289,7 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, ErrorCascade<ParserError>> {
-        Ok(self.assignment()?)
+        self.assignment()
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
@@ -361,6 +401,49 @@ impl Parser {
         })))
     }
 
+    fn function(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
+        let name = self.consume(
+            TokenType::Identifier,
+            error!(ParserError::ExpectedFunctionIdentifier),
+        )?;
+
+        self.consume(TokenType::LeftParen, error!(ParserError::ExpectedArguments))?;
+
+        let mut params: Vec<Token> = vec![];
+        if !self.check(TokenType::RightParen)? {
+            'parameters: loop {
+                if params.len() >= 255 {
+                    Err(error!(ParserError::MaxArguments))?;
+                }
+                params.push(self.consume(
+                    TokenType::Identifier,
+                    error!(ParserError::ExpectedParameterIdentifier),
+                )?);
+                if !self.r#match(vec![TokenType::Comma])? {
+                    break 'parameters;
+                }
+            }
+        };
+
+        self.consume(
+            TokenType::RightParen,
+            error!(ParserError::ExpectedArguments),
+        )?;
+
+        self.consume(
+            TokenType::LeftBrace,
+            error!(ParserError::ExpectedFunctionBlock),
+        )?;
+
+        let body = self.block_statement()?;
+
+        Ok(Stmt::Function(Box::new(FunctionStmt {
+            name,
+            params,
+            body,
+        })))
+    }
+
     fn statement(&mut self) -> Result<Stmt, ErrorCascade<ParserError>> {
         if self.r#match(vec![TokenType::Print])? {
             self.print_statement()
@@ -372,6 +455,8 @@ impl Parser {
             self.while_statement()
         } else if self.r#match(vec![TokenType::For])? {
             self.for_statement()
+        } else if self.r#match(vec![TokenType::Fn])? {
+            self.function()
         } else {
             self.expression_statement()
         }
@@ -536,6 +621,25 @@ mod parser_tests {
             for let a = 0; a < 10; a = a + 1 { 
                 print a; 
             }
+            ",
+        );
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
+        assert!(parser_result.is_ok());
+    }
+
+    #[test]
+    fn parses_function_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize(
+            "
+            fn test(a, b) {
+                print a + b;
+            }
+
+            test(1, 2);
             ",
         );
         assert!(lexer_result.is_ok());

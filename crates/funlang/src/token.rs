@@ -35,6 +35,7 @@ pub enum TokenType {
     Let,
     While,
     This,
+    Fn,
 
     // Single-character
     LeftBracket,
@@ -70,6 +71,7 @@ impl TokenType {
             "let" => Some(TokenType::Let),
             "while" => Some(TokenType::While),
             "this" => Some(TokenType::This),
+            "fn" => Some(TokenType::Fn),
             _ => None,
         }
     }

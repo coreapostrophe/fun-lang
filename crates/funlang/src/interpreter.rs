@@ -9,12 +9,14 @@ use crate::{
 #[derive(Debug)]
 pub struct Interpreter {
     environment: Environment,
+    globals: Environment,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Self {
             environment: Environment::new(),
+            globals: Environment::new(),
         }
     }
 
@@ -26,6 +28,22 @@ impl Interpreter {
             statement.execute(&mut self.environment)?;
         }
         Ok(())
+    }
+
+    pub fn environment(&self) -> &Environment {
+        &self.environment
+    }
+
+    pub fn mut_environment(&mut self) -> &mut Environment {
+        &mut self.environment
+    }
+
+    pub fn globals(&self) -> &Environment {
+        &self.globals
+    }
+
+    pub fn mut_globals(&mut self) -> &mut Environment {
+        &mut self.globals
     }
 }
 
@@ -180,6 +198,28 @@ mod interpreter_tests {
         let mut parser = Parser::new();
         let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
+        assert!(parser_result.is_ok());
+
+        let mut interpreter = Interpreter::new();
+        assert!(interpreter.interpret(parser_result.unwrap()).is_ok());
+    }
+
+    #[test]
+    fn interprets_function_statements() {
+        let mut lexer = Lexer::new();
+        let lexer_result = lexer.tokenize(
+            "
+            fn test(a, b) {
+                print a + b;
+            }
+
+            test(1, 2);
+            ",
+        );
+        assert!(lexer_result.is_ok());
+
+        let mut parser = Parser::new();
+        let parser_result = parser.parse(lexer_result.unwrap());
         assert!(parser_result.is_ok());
 
         let mut interpreter = Interpreter::new();

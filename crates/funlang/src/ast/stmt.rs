@@ -1,6 +1,6 @@
 use crate::{
     ast::expr::Expr, environment::Environment, error, errors::InterpreterError,
-    literal::LiteralData, token::Token,
+    functions::Function, literal::LiteralData, token::Token,
 };
 use funlang_derive::Ast;
 use funlang_error::ErrorCascade;
@@ -29,10 +29,16 @@ pub enum Stmt {
 
     #[production(condition: Expr, body: Stmt)]
     While(Box<WhileStmt>),
+
+    #[production(name: Token, params: Vec<Token>, body: Stmt)]
+    Function(Box<FunctionStmt>),
 }
 
 impl Executable<LiteralData> for Stmt {
-    fn execute(&self, environment: &mut Environment) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+    fn execute(
+        &self,
+        environment: &mut Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
             Self::Expression(expression_statement) => {
                 let evaluated_value = expression_statement.expression.evaluate(environment)?;
@@ -69,7 +75,7 @@ impl Executable<LiteralData> for Stmt {
 
                 for statement in &block_statement.statements {
                     statement.execute(&mut environment)?;
-                };
+                }
                 Ok(LiteralData::None)
             }
             Self::If(if_statement) => {
@@ -90,6 +96,24 @@ impl Executable<LiteralData> for Stmt {
                 {
                     while_statement.body.execute(environment)?;
                 }
+                Ok(LiteralData::None)
+            }
+            Self::Function(function_statement) => {
+                let name = function_statement
+                    .name
+                    .lexeme
+                    .clone()
+                    .ok_or(error!(InterpreterError::MissingIdentifier))?;
+                let arity = function_statement.params.len() as u32;
+                let function_value = Function::new(arity, function_statement.clone());
+
+                environment.define(
+                    &name,
+                    Expr::Literal(Box::new(LiteralExpr {
+                        literal: LiteralData::Function(function_value),
+                    })),
+                );
+
                 Ok(LiteralData::None)
             }
         }

@@ -1,34 +1,36 @@
 use std::{
     cmp::Ordering,
-    fmt::Display,
+    fmt::{Debug, Display},
     ops::{Add, Div, Mul, Sub},
 };
 
 use funlang_error::ErrorCascade;
 
-use crate::{error, errors::InterpreterError, parse_string_to_num};
+use crate::{error, errors::InterpreterError, functions::Function, parse_string_to_num};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum LiteralData {
     String(String),
     Number(f32),
     Bool(bool),
+    Function(Function),
     None,
 }
 
 impl LiteralData {
     fn parse_num(&self) -> Result<f32, ErrorCascade<InterpreterError>> {
         match self {
-            LiteralData::Bool(bool_value) => Ok(if bool_value.clone() { 1.0 } else { 0.0 }),
-            LiteralData::Number(number_value) => Ok(number_value.clone()),
-            LiteralData::String(string_value) => {
+            Self::Bool(bool_value) => Ok(if bool_value.clone() { 1.0 } else { 0.0 }),
+            Self::Number(number_value) => Ok(number_value.clone()),
+            Self::String(string_value) => {
                 let parsed_string_value = parse_string_to_num!(
                     string_value,
                     error!(InterpreterError::InvalidParsedNumber(string_value.clone()))
                 )?;
                 Ok(parsed_string_value)
             }
-            LiteralData::None => Ok(0.0),
+            Self::None => Ok(0.0),
+            Self::Function(_) => Ok(1.0),
         }
     }
 
@@ -42,44 +44,39 @@ impl LiteralData {
 }
 
 impl Add for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<InterpreterError>>;
+    type Output = Result<Self, ErrorCascade<InterpreterError>>;
     fn add(self, rhs: Self) -> Self::Output {
         match self {
-            LiteralData::String(ref addend1) => match rhs {
-                LiteralData::Bool(ref addend2) => {
-                    Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
-                }
-                LiteralData::String(ref addend2) => {
-                    Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
-                }
-                LiteralData::Number(ref addend2) => {
-                    Ok(LiteralData::String(format!("{}{}", addend1, addend2)))
-                }
-                LiteralData::None => Ok(LiteralData::String(format!("{}null", addend1))),
+            Self::String(ref addend1) => match rhs {
+                Self::Function(ref addend2) => Ok(Self::String(format!("{}{}", addend1, addend2))),
+                Self::Bool(ref addend2) => Ok(Self::String(format!("{}{}", addend1, addend2))),
+                Self::String(ref addend2) => Ok(Self::String(format!("{}{}", addend1, addend2))),
+                Self::Number(ref addend2) => Ok(Self::String(format!("{}{}", addend1, addend2))),
+                Self::None => Ok(Self::String(format!("{}null", addend1))),
             },
-            _ => Ok(LiteralData::Number(self.parse_num()? + rhs.parse_num()?)),
+            _ => Ok(Self::Number(self.parse_num()? + rhs.parse_num()?)),
         }
     }
 }
 
 impl Sub for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<InterpreterError>>;
+    type Output = Result<Self, ErrorCascade<InterpreterError>>;
     fn sub(self, rhs: Self) -> Self::Output {
-        Ok(LiteralData::Number(self.parse_num()? - rhs.parse_num()?))
+        Ok(Self::Number(self.parse_num()? - rhs.parse_num()?))
     }
 }
 
 impl Mul for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<InterpreterError>>;
+    type Output = Result<Self, ErrorCascade<InterpreterError>>;
     fn mul(self, rhs: Self) -> Self::Output {
-        Ok(LiteralData::Number(self.parse_num()? * rhs.parse_num()?))
+        Ok(Self::Number(self.parse_num()? * rhs.parse_num()?))
     }
 }
 
 impl Div for LiteralData {
-    type Output = Result<LiteralData, ErrorCascade<InterpreterError>>;
+    type Output = Result<Self, ErrorCascade<InterpreterError>>;
     fn div(self, rhs: Self) -> Self::Output {
-        Ok(LiteralData::Number(self.parse_num()? / rhs.parse_num()?))
+        Ok(Self::Number(self.parse_num()? / rhs.parse_num()?))
     }
 }
 
@@ -142,10 +139,11 @@ impl PartialOrd for LiteralData {
 impl Display for LiteralData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            LiteralData::Bool(bool_value) => write!(f, "{}", bool_value),
-            LiteralData::String(string_value) => write!(f, "{}", string_value),
-            LiteralData::Number(number_balue) => write!(f, "{}", number_balue),
-            LiteralData::None => write!(f, "None"),
+            Self::Bool(bool_value) => write!(f, "{}", bool_value),
+            Self::String(string_value) => write!(f, "{}", string_value),
+            Self::Number(number_value) => write!(f, "{}", number_value),
+            Self::None => write!(f, "None"),
+            Self::Function(function_value) => write!(f, "{}", function_value),
         }
     }
 }

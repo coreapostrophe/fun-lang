@@ -5,6 +5,7 @@ use crate::{
     environment::Environment,
     error,
     errors::InterpreterError,
+    functions::Callable,
     literal::LiteralData,
     parse_string_to_num,
     token::{Token, TokenType},
@@ -34,6 +35,9 @@ pub enum Expr {
 
     #[production(left: Expr, operator: Token, right: Expr)]
     Logical(Box<LogicalExpr>),
+
+    #[production(callee: Expr, paren: Token, arguments: Vec<Expr>)]
+    Call(Box<CallExpr>),
 }
 
 impl Evaluable<LiteralData> for Expr {
@@ -42,13 +46,34 @@ impl Evaluable<LiteralData> for Expr {
         environment: &mut Environment,
     ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
         match self {
-            Expr::Unary(unary_expr) => unary_expr.evaluate(environment),
-            Expr::Binary(binary_expr) => binary_expr.evaluate(environment),
-            Expr::Literal(literal_expr) => literal_expr.evaluate(environment),
-            Expr::Grouping(grouping_expr) => grouping_expr.evaluate(environment),
-            Expr::Variable(variable_expr) => variable_expr.evaluate(environment),
-            Expr::Assign(assignment_expr) => assignment_expr.evaluate(environment),
-            Expr::Logical(logical_expr) => logical_expr.evaluate(environment),
+            Self::Unary(unary_expr) => unary_expr.evaluate(environment),
+            Self::Binary(binary_expr) => binary_expr.evaluate(environment),
+            Self::Literal(literal_expr) => literal_expr.evaluate(environment),
+            Self::Grouping(grouping_expr) => grouping_expr.evaluate(environment),
+            Self::Variable(variable_expr) => variable_expr.evaluate(environment),
+            Self::Assign(assignment_expr) => assignment_expr.evaluate(environment),
+            Self::Logical(logical_expr) => logical_expr.evaluate(environment),
+            Self::Call(call_expr) => call_expr.evaluate(environment),
+        }
+    }
+}
+
+impl Evaluable<LiteralData> for CallExpr {
+    fn evaluate(
+        &self,
+        environment: &mut Environment,
+    ) -> Result<LiteralData, ErrorCascade<InterpreterError>> {
+        let callee = self.callee.evaluate(environment)?;
+
+        let mut arguments: Vec<LiteralData> = vec![];
+        for argument in &self.arguments {
+            arguments.push(argument.evaluate(environment)?);
+        }
+
+        if let LiteralData::Function(function_value) = callee {
+            function_value.call(environment, arguments)
+        } else {
+            Err(error!(InterpreterError::UncallableExpression))
         }
     }
 }
@@ -87,9 +112,7 @@ impl Evaluable<LiteralData> for AssignExpr {
         environment
             .assign(
                 &name,
-                Expr::Literal(Box::new(LiteralExpr {
-                    literal: value,
-                })),
+                Expr::Literal(Box::new(LiteralExpr { literal: value })),
             )
             .or(Err(error!(InterpreterError::InvalidIdentifier(
                 name.clone()
@@ -216,6 +239,7 @@ impl Evaluable<LiteralData> for UnaryExpr {
                         Ok(LiteralData::Bool(false))
                     }
                 }
+                LiteralData::Function(_) => Ok(LiteralData::Bool(false)),
             },
             TokenType::Minus => match right {
                 LiteralData::None => Ok(LiteralData::Bool(true)),
@@ -231,6 +255,7 @@ impl Evaluable<LiteralData> for UnaryExpr {
                     )?;
                     Ok(LiteralData::Number(parsed_number))
                 }
+                LiteralData::Function(_) => Ok(LiteralData::Number(-1.0)),
             },
             token_type => Err(error!(InterpreterError::InvalidUnaryOperator(
                 token_type.to_string()

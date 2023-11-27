@@ -36,8 +36,12 @@ pub enum InterpreterError {
     MissingSpan,
     #[message = "variable expression does not have an identifier"]
     MissingIdentifier,
+    #[message = "expression being called is not a function"]
+    UncallableExpression,
     #[message = "variable with identifier `{}` does not exist"]
     InvalidIdentifier(String),
+    #[message = "Expected {} arguments but got {}"]
+    InvalidArguments(u32, u32),
 }
 
 #[derive(Error)]
@@ -80,14 +84,26 @@ pub enum ParserError {
     MissingSpan,
     #[message = "expected an `=` symbol in variable declaration"]
     ExpectedEqual,
-    #[message = "expected a block statement after the `if` condition"]
+    #[message = "expected a block statement `{/* block */}` after the `if` condition"]
     ExpectedIfBlock,
-    #[message = "expected a block statement after the `while` condition"]
+    #[message = "expected a block statement `{/* block */}` after the `while` condition"]
     ExpectedWhileBlock,
-    #[message = "expected a block statement after the `for` condition"]
+    #[message = "expected a block statement `{/* block */}` after the `for` condition"]
     ExpectedForBlock,
+    #[message = "expected a block statement `{/* block */}` after the function identifier"]
+    ExpectedFunctionBlock,
+    #[message = "expected a parenthesized `()` argument section"]
+    ExpectedArguments,
     #[message = "expected an identifier name"]
     ExpectedIdentifier,
+    #[message = "expected a parameter name"]
+    ExpectedParameterIdentifier,
+    #[message = "expected a function name"]
+    ExpectedFunctionIdentifier,
+    #[message = "expression being parsed is not a function"]
+    InvalidFunction,
+    #[message = "a function can't have more than 255 arguments"]
+    MaxArguments,
     #[message = "expected a `;` after the loop condition"]
     ExpectedLoopConditionTermination,
     #[message = "expression before the `=` symbol should be a valid variable"]

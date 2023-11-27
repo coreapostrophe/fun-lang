@@ -7,3 +7,4 @@ pub mod literal;
 pub mod macros;
 pub mod parser;
 pub mod token;
+pub mod functions;
